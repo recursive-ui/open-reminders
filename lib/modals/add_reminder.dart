@@ -1,8 +1,11 @@
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
-import 'package:open_reminders/modals/date_picker_modal.dart';
+import 'package:open_reminders/modals/duration_picker_modal.dart';
 import 'package:open_reminders/models/reminder.dart';
+import 'package:open_reminders/utilities.dart';
 import 'package:open_reminders/widgets/add_reminder_button.dart';
+import 'package:open_reminders/widgets/duration_picker.dart';
 
 class AddReminder extends StatefulWidget {
   const AddReminder({super.key});
@@ -15,16 +18,64 @@ class _AddReminderState extends State<AddReminder> {
   final _formKey = GlobalKey<FormState>();
   bool expandForm = false;
   DateTime? date;
-  List<DateTime>? times;
+  TimeOfDay? time;
   Duration? duration;
   List<Reminder>? reminders;
   List<Repeat>? repeat;
 
-  void showModal() {
-    showDialog<void>(
+  void showCalendarPicker() async {
+    double height = MediaQuery.of(context).size.height * 0.5;
+    double width = MediaQuery.of(context).size.width * 0.9;
+    List<DateTime?>? results = await showCalendarDatePicker2Dialog(
+      context: context,
+      config: CalendarDatePicker2WithActionButtonsConfig(
+        selectedDayHighlightColor: ThemeColors.kPrimary,
+      ),
+      dialogSize: Size(width, height),
+      borderRadius: BorderRadius.circular(2),
+    );
+    if (results != null) {
+      if (results.isNotEmpty) {
+        setState(() {
+          date = results[0];
+        });
+      }
+    }
+  }
+
+  void showTimeOfDayPicker() async {
+    TimeOfDay? selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (selectedTime != null) {
+      setState(() {
+        time = selectedTime;
+      });
+    }
+  }
+
+  void showDurationDialog() async {
+    Duration? newDuration = await showDialog<Duration>(
       context: context,
       builder: (BuildContext context) {
-        return const DatePickerModal();
+        return const DurationPickerModal();
+      },
+    );
+
+    if (newDuration != null) {
+      setState(() {
+        duration = newDuration;
+      });
+    }
+  }
+
+  void showModal() {
+    showDialog<Duration>(
+      context: context,
+      builder: (BuildContext context) {
+        return const DurationPickerModal();
       },
     );
   }
@@ -113,16 +164,28 @@ class _AddReminderState extends State<AddReminder> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       AddReminderIconButton(
-                        onPressed: showModal,
+                        text: prettyDate(date),
+                        onPressed: showCalendarPicker,
                         iconData: Icons.date_range,
+                        colour: date == null
+                            ? Colors.white.withOpacity(0.24)
+                            : ThemeColors.kPrimary,
                       ),
                       AddReminderIconButton(
-                        onPressed: showModal,
+                        text: prettyTime(time),
+                        onPressed: showTimeOfDayPicker,
                         iconData: Icons.access_time,
+                        colour: time == null
+                            ? Colors.white.withOpacity(0.24)
+                            : ThemeColors.kPrimary,
                       ),
                       AddReminderIconButton(
-                        onPressed: showModal,
+                        text: prettyDuration(duration),
+                        onPressed: showDurationDialog,
                         iconData: Icons.timer,
+                        colour: duration == null
+                            ? Colors.white.withOpacity(0.24)
+                            : ThemeColors.kPrimary,
                       ),
                       AddReminderIconButton(
                         onPressed: showModal,

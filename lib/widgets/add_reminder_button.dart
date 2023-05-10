@@ -6,35 +6,46 @@ class AddReminderIconButton extends StatelessWidget {
     Key? key,
     required this.iconData,
     required this.onPressed,
-    this.height = 28,
-    this.width = 28,
+    this.text,
     this.iconSize = 24,
     this.colour = ThemeColors.kPrimary,
-    this.padding = const EdgeInsets.all(4.0),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: 8.0,
+      vertical: 4.0,
+    ),
   }) : super(key: key);
   final IconData iconData;
-  final double? height;
-  final double? width;
-  final double? iconSize;
+  final double iconSize;
   final Color? colour;
   final EdgeInsets padding;
   final void Function()? onPressed;
+  final String? text;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      child: SizedBox(
-        height: height,
-        width: width,
-        child: IconButton(
-          onPressed: onPressed,
-          splashRadius: iconSize,
-          padding: EdgeInsets.zero,
-          icon: Icon(iconData, size: iconSize),
-          color: colour,
-        ),
-      ),
+      child: text == null
+          ? GestureDetector(
+              onTap: onPressed,
+              child: Icon(
+                iconData,
+                size: iconSize,
+                color: colour,
+              ),
+            )
+          : GestureDetector(
+              onTap: onPressed,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(iconData, size: iconSize, color: colour),
+                  const SizedBox(width: 4.0),
+                  Text(text!, style: TextStyle(color: colour)),
+                ],
+              ),
+            ),
     );
   }
 }

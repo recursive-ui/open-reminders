@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
+
 class Task {
   late String name;
   String? description;
   DateTime? date;
-  List<DateTime>? times;
+  List<TimeOfDay>? time;
   Duration? duration;
   List<Reminder>? reminders;
   List<Repeat>? repeat;
@@ -14,7 +16,7 @@ class Task {
     name = json['name'];
     description = json['description'];
     date = json['date'];
-    times = json['times'];
+    time = json['times'];
     duration = json['duration'];
     reminders = json['reminders'];
     repeat = json['repeat'];
@@ -27,9 +29,7 @@ class Task {
         'name': name,
         'description': description,
         'date': date == null ? null : date!.toIso8601String(),
-        'times': times == null
-            ? []
-            : times!.map((t) => t.toIso8601String()).toList(),
+        'time': time == null ? [] : time!.map((t) => t.toString()).toList(),
         'duration': duration ?? duration.toString(),
         'reminders': reminders == null
             ? null

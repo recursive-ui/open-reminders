@@ -43,7 +43,18 @@ class MyApp extends StatelessWidget {
 ThemeData _buildTheme(brightness) {
   var baseTheme = ThemeData(
     brightness: brightness,
-    backgroundColor: ThemeColors.kBackground,
+    colorScheme: const ColorScheme.dark(
+      primary: ThemeColors.kPrimary,
+      onPrimary: ThemeColors.kOnPrimary,
+      background: ThemeColors.kBackground,
+      onBackground: ThemeColors.kOnBackground,
+      secondary: ThemeColors.kSecondary,
+      onSecondary: ThemeColors.kOnSecondary,
+      error: ThemeColors.kError,
+      onError: ThemeColors.kOnError,
+      surface: ThemeColors.kSurface,
+      onSurface: ThemeColors.kOnSurface,
+    ),
     scaffoldBackgroundColor: ThemeColors.kBackground,
     primaryColor: ThemeColors.kPrimary,
   );
