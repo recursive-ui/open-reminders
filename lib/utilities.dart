@@ -43,3 +43,41 @@ String? prettyDuration(Duration? duration) {
   }
   return outDuration.join(" ");
 }
+
+String capitalise(String s) => s[0].toUpperCase() + s.substring(1);
+
+String? validatorForMissingFields(String? input) {
+  if (input == null || input.isEmpty || input.trim().isEmpty) {
+    return "Mandatory field";
+  }
+  return null;
+}
+
+String? validatorNumericField(String? input) {
+  if (input != null && input != '') {
+    if (double.tryParse(input) == null) {
+      return "Needs to be a number";
+    }
+  }
+  return null;
+}
+
+String? validatorRangeField(String? input) {
+  if (input != null && input != '') {
+    final validCharacters = RegExp(r'^[0-9]+-[0-9]+$');
+    if (!validCharacters.hasMatch(input.replaceAll(' ', ''))) {
+      return "Needs to be two numbers\n seperated by a dash\n e.g. 1-5";
+    }
+  }
+  return null;
+}
+
+String? validatorListValuesField(String? input) {
+  if (input != null && input != '') {
+    final validCharacters = RegExp(r'^\d+(,\d+)*$');
+    if (!validCharacters.hasMatch(input.replaceAll(' ', ''))) {
+      return "Needs to be numbers\n seperated by commas\n e.g. 1,2,3";
+    }
+  }
+  return null;
+}

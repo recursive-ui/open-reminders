@@ -1,11 +1,13 @@
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/modals/duration_picker_modal.dart';
+import 'package:open_reminders/modals/reminder_picker_modal.dart';
+import 'package:open_reminders/modals/repeat_picker_modal.dart';
 import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/utilities.dart';
 import 'package:open_reminders/widgets/add_reminder_button.dart';
-import 'package:open_reminders/widgets/duration_picker.dart';
 
 class AddReminder extends StatefulWidget {
   const AddReminder({super.key});
@@ -21,7 +23,7 @@ class _AddReminderState extends State<AddReminder> {
   TimeOfDay? time;
   Duration? duration;
   List<Reminder>? reminders;
-  List<Repeat>? repeat;
+  Repeat? repeat;
 
   void showCalendarPicker() async {
     double height = MediaQuery.of(context).size.height * 0.5;
@@ -71,13 +73,34 @@ class _AddReminderState extends State<AddReminder> {
     }
   }
 
-  void showModal() {
-    showDialog<Duration>(
+  void showRepeatModal() async {
+    Repeat? newRepeat = await showDialog<Repeat>(
       context: context,
       builder: (BuildContext context) {
-        return const DurationPickerModal();
+        return const RepeatPickerModal();
       },
     );
+
+    if (newRepeat != null) {
+      setState(() {
+        repeat = newRepeat;
+      });
+    }
+  }
+
+  void showReminderModal() async {
+    List<Reminder>? newReminders = await showDialog<List<Reminder>>(
+      context: context,
+      builder: (BuildContext context) {
+        return const ReminderPickerModal();
+      },
+    );
+
+    if (newReminders != null) {
+      setState(() {
+        reminders = newReminders;
+      });
+    }
   }
 
   @override
@@ -100,15 +123,11 @@ class _AddReminderState extends State<AddReminder> {
                 children: [
                   Expanded(
                     child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'What do you want to do?',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter some text';
-                          }
-                          return null;
-                        }),
+                      decoration: const InputDecoration(
+                        labelText: 'What do you want to do?',
+                      ),
+                      validator: validatorForMissingFields,
+                    ),
                   ),
                   const SizedBox(width: 8.0),
                   IconButton(
@@ -149,6 +168,8 @@ class _AddReminderState extends State<AddReminder> {
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
                   ? TextFormField(
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
                         labelText: 'Priority',
                       ),
@@ -188,8 +209,18 @@ class _AddReminderState extends State<AddReminder> {
                             : ThemeColors.kPrimary,
                       ),
                       AddReminderIconButton(
-                        onPressed: showModal,
+                        onPressed: showRepeatModal,
                         iconData: Icons.repeat,
+                        colour: repeat == null
+                            ? Colors.white.withOpacity(0.24)
+                            : ThemeColors.kPrimary,
+                      ),
+                      AddReminderIconButton(
+                        onPressed: showReminderModal,
+                        iconData: Icons.alarm,
+                        colour: reminders == null
+                            ? Colors.white.withOpacity(0.24)
+                            : ThemeColors.kPrimary,
                       ),
                     ],
                   ),
