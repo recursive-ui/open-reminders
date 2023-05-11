@@ -3,7 +3,9 @@ import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/widgets/duration_picker.dart';
 
 class DurationPickerModal extends StatefulWidget {
-  const DurationPickerModal({super.key});
+  const DurationPickerModal({super.key, this.onlyUseBaseUnit});
+
+  final BaseUnit? onlyUseBaseUnit;
 
   @override
   State<DurationPickerModal> createState() => _DurationPickerModalState();
@@ -12,6 +14,14 @@ class DurationPickerModal extends StatefulWidget {
 class _DurationPickerModalState extends State<DurationPickerModal> {
   Duration _duration = const Duration(hours: 0, minutes: 0);
   BaseUnit baseUnit = BaseUnit.minute;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.onlyUseBaseUnit != null) {
+      baseUnit = widget.onlyUseBaseUnit!;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,59 +43,61 @@ class _DurationPickerModalState extends State<DurationPickerModal> {
                 snapToMins: 5.0,
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: baseUnit == BaseUnit.minute
-                        ? Colors.white.withOpacity(0.08)
-                        : Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(5.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        baseUnit = BaseUnit.minute;
-                      });
-                    },
-                    child: Text(
-                      'Minutes',
-                      style: TextStyle(
+            widget.onlyUseBaseUnit == null
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
                           color: baseUnit == BaseUnit.minute
-                              ? ThemeColors.kOnSurface
-                              : ThemeColors.kOnSurface.withOpacity(0.08)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8.0),
-                Container(
-                  decoration: BoxDecoration(
-                    color: baseUnit == BaseUnit.hour
-                        ? Colors.white.withOpacity(0.08)
-                        : Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(5.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        baseUnit = BaseUnit.hour;
-                      });
-                    },
-                    child: Text(
-                      'Hours',
-                      style: TextStyle(
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              baseUnit = BaseUnit.minute;
+                            });
+                          },
+                          child: Text(
+                            'Minutes',
+                            style: TextStyle(
+                                color: baseUnit == BaseUnit.minute
+                                    ? ThemeColors.kOnSurface
+                                    : ThemeColors.kOnSurface.withOpacity(0.08)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Container(
+                        decoration: BoxDecoration(
                           color: baseUnit == BaseUnit.hour
-                              ? ThemeColors.kOnSurface
-                              : ThemeColors.kOnSurface.withOpacity(0.08)),
-                    ),
-                  ),
-                ),
-              ],
-            )
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              baseUnit = BaseUnit.hour;
+                            });
+                          },
+                          child: Text(
+                            'Hours',
+                            style: TextStyle(
+                                color: baseUnit == BaseUnit.hour
+                                    ? ThemeColors.kOnSurface
+                                    : ThemeColors.kOnSurface.withOpacity(0.08)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Container()
           ],
         ),
       ),

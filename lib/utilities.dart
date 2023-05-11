@@ -27,6 +27,16 @@ String? prettyTime(TimeOfDay? timeOfDay) {
   return '${timeOfDay.hour.toString().padLeft(2, '0')}:${timeOfDay.minute.toString().padLeft(2, '0')}';
 }
 
+String? prettierTime(TimeOfDay? timeOfDay) {
+  if (timeOfDay == null) {
+    return null;
+  }
+  String minute = timeOfDay.minute.toString().padLeft(2, '0');
+  String amPm = timeOfDay.period.name;
+
+  return '${timeOfDay.hourOfPeriod}:$minute $amPm';
+}
+
 String? prettyDuration(Duration? duration) {
   if (duration == null) {
     return null;

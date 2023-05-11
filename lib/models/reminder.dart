@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:open_reminders/utilities.dart';
 
 class Task {
   late String name;
   String? description;
   DateTime? date;
-  List<TimeOfDay>? time;
   Duration? duration;
   List<Reminder>? reminders;
   Repeat? repeat;
@@ -16,7 +16,6 @@ class Task {
     name = json['name'];
     description = json['description'];
     date = json['date'];
-    time = json['times'];
     duration = json['duration'];
     reminders = json['reminders'];
     repeat = json['repeat'];
@@ -29,7 +28,6 @@ class Task {
         'name': name,
         'description': description,
         'date': date == null ? null : date!.toIso8601String(),
-        'time': time == null ? [] : time!.map((t) => t.toString()).toList(),
         'duration': duration ?? duration.toString(),
         'reminders': reminders == null
             ? null
@@ -41,26 +39,48 @@ class Task {
       };
 }
 
-enum ReminderType { dayRelative, timeRelative }
-
 class Reminder {
-  ReminderType type;
-  Duration? duration;
-  DateTime? time;
-  Reminder(this.type, {this.duration, this.time});
+  Duration duration;
+  TimeOfDay? time;
+  Reminder({this.duration = const Duration(), this.time});
 
   DateTime getNextDate(DateTime dateTime) {
-    switch (type) {
-      case ReminderType.dayRelative:
-        return DateTime(
-          dateTime.year,
-          dateTime.month,
-          dateTime.day,
-          time?.hour ?? 0,
-          time?.minute ?? 0,
-        );
-      default:
-        return dateTime.add(duration ?? const Duration());
+    DateTime nextDate = dateTime;
+    nextDate = nextDate.subtract(duration);
+    if (time != null) {
+      nextDate = DateTime(
+        nextDate.year,
+        nextDate.month,
+        nextDate.day,
+        time!.hour,
+        time!.minute,
+      );
+    }
+    return nextDate;
+  }
+
+  String get prettyName {
+    if (duration == const Duration() && time == null) {
+      return 'On due date/time';
+    }
+    String durationString = '';
+
+    if (duration == const Duration()) {
+      durationString = 'that day';
+    } else {
+      if (duration.inDays > 1) {
+        durationString = '${duration.inDays} days before';
+      } else if (duration.inHours > 1) {
+        durationString = '${duration.inHours} hours before';
+      } else {
+        durationString = '${duration.inMinutes} mins before';
+      }
+    }
+
+    if (time == null) {
+      return durationString;
+    } else {
+      return '${prettierTime(time)} $durationString';
     }
   }
 }
