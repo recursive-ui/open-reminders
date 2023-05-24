@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     ReminderList(),
     Text('Index 1: Calendar'),
+    Text('Index 2: Completed'),
     Text('Index 2: Settings'),
   ];
 
@@ -38,6 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month),
             label: 'Calendar',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.check_box),
+            label: 'Completed',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

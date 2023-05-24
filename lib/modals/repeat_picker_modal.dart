@@ -4,9 +4,12 @@ import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/models/dialog_status.dart';
 import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/widgets/repeat_picker_row.dart';
+import 'package:open_reminders/widgets/repeat_picker_weekday_row.dart';
 
 class RepeatPickerModal extends StatefulWidget {
-  const RepeatPickerModal({super.key});
+  const RepeatPickerModal({super.key, this.repeat});
+
+  final Repeat? repeat;
 
   @override
   State<RepeatPickerModal> createState() => _RepeatPickerModalState();
@@ -16,45 +19,97 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
   final _formKey = GlobalKey<FormState>();
 
   List<DateTime>? testResults;
+  List<int>? selectedWeekdays;
+  List<bool> isCheckedDaysOfWeek = List.filled(7, false);
   TextEditingController minuteController = TextEditingController();
   TextEditingController hourController = TextEditingController();
   TextEditingController dayController = TextEditingController();
-  TextEditingController weekdayController = TextEditingController();
   TextEditingController monthController = TextEditingController();
   RepeatType minutePicker = RepeatType.value;
   RepeatType hourPicker = RepeatType.value;
-  RepeatType dayPicker = RepeatType.any;
-  RepeatType weekdayPicker = RepeatType.value;
+  RepeatType dayPicker = RepeatType.value;
   RepeatType monthPicker = RepeatType.value;
 
+  void checkDayOfWeek(index) {
+    setState(() {
+      isCheckedDaysOfWeek[index] = !isCheckedDaysOfWeek[index];
+    });
+  }
+
   Repeat createRepeat() {
+    selectedWeekdays = [];
+    for (var i = 0; i < 7; i++) {
+      if (isCheckedDaysOfWeek[i]) {
+        selectedWeekdays?.add(i);
+      }
+    }
+
+    if (selectedWeekdays!.isEmpty) {
+      selectedWeekdays = null;
+    }
+
     return Repeat(
-      minutes: minuteController.text == ''
+      minutes: minuteController.text == '' && minutePicker != RepeatType.any
           ? null
           : RepeatValue.fromString(minutePicker, minuteController.text),
-      hours: hourController.text == ''
+      hours: hourController.text == '' && hourPicker != RepeatType.any
           ? null
           : RepeatValue.fromString(hourPicker, hourController.text),
-      days: dayController.text == ''
+      days: dayController.text == '' && dayPicker != RepeatType.any
           ? null
           : RepeatValue.fromString(dayPicker, dayController.text),
-      weekdays: weekdayController.text == ''
+      weekdays: selectedWeekdays == null
           ? null
-          : RepeatValue.fromString(weekdayPicker, weekdayController.text),
-      months: monthController.text == ''
+          : RepeatValue(RepeatType.value, value: selectedWeekdays),
+      months: monthController.text == '' && monthPicker != RepeatType.any
           ? null
           : RepeatValue.fromString(monthPicker, monthController.text),
     );
   }
 
   @override
+  void dispose() {
+    minuteController.dispose();
+    hourController.dispose();
+    dayController.dispose();
+    monthController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
-    minuteController.text = '0';
-    hourController.text = '9';
-    setState(() {
-      testResults = createRepeat().getNextNDates(3);
-    });
+    if (widget.repeat == null) {
+      minuteController.text = '0';
+      hourController.text = '9';
+      dayPicker = RepeatType.any;
+    } else {
+      Map<String, RepeatValue> initialRepeat = widget.repeat!.toRepeatValueMap;
+      minuteController.text = initialRepeat['minutes']?.value == null
+          ? ''
+          : initialRepeat['minutes']!.value!.join(',');
+      hourController.text = initialRepeat['hours']?.value == null
+          ? ''
+          : initialRepeat['hours']!.value!.join(',');
+      dayController.text = initialRepeat['days']?.value == null
+          ? ''
+          : initialRepeat['days']!.value!.join(',');
+      monthController.text = initialRepeat['months']?.value == null
+          ? ''
+          : initialRepeat['months']!.value!.join(',');
+
+      if (initialRepeat['weekdays']?.value != null) {
+        for (int weekday in initialRepeat['weekdays']!.value!) {
+          isCheckedDaysOfWeek[weekday] = true;
+        }
+      }
+
+      minutePicker = initialRepeat['minutes']?.type ?? RepeatType.value;
+      hourPicker = initialRepeat['hours']?.type ?? RepeatType.value;
+      dayPicker = initialRepeat['days']?.type ?? RepeatType.any;
+      monthPicker = initialRepeat['months']?.type ?? RepeatType.value;
+    }
+    testResults = createRepeat().getNextNDates(3);
   }
 
   @override
@@ -95,7 +150,7 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
                   },
                 ),
                 RepeatPickerRow(
-                  labelText: 'Days',
+                  labelText: 'Days of Month',
                   controller: dayController,
                   value: dayPicker,
                   onChanged: (newValue) {
@@ -106,17 +161,9 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
                     });
                   },
                 ),
-                RepeatPickerRow(
-                  labelText: 'Week Days',
-                  controller: weekdayController,
-                  value: weekdayPicker,
-                  onChanged: (newValue) {
-                    setState(() {
-                      if (newValue != null) {
-                        weekdayPicker = newValue;
-                      }
-                    });
-                  },
+                RepeatPickerWeekdayRow(
+                  selectedWeekdays: isCheckedDaysOfWeek,
+                  changeWeekday: checkDayOfWeek,
                 ),
                 RepeatPickerRow(
                   labelText: 'Months',

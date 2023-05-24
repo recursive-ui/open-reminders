@@ -1,71 +1,107 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'dart:math' as math;
+import 'package:open_reminders/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:open_reminders/models/reminder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskModel extends ChangeNotifier {
-  Map<String, Task> _tasks = {};
+  List<Task> _tasks = [];
   String filePath = '';
 
   TaskModel() {
     _initModel();
   }
 
-  Map<String, Task> get tasks {
-    return Map.unmodifiable(_tasks);
+  List<Task> get tasks {
+    return List.unmodifiable(_tasks);
   }
 
-  Map<String, Task> get incompleteTasks {
-    Map<String, Task> tmpTasks = {};
-    _tasks.forEach((key, value) {
-      if (value.taskState == TaskState.incomplete) {
-        tmpTasks[key] = value;
-      }
-    });
-    return tmpTasks;
+  List<Task> get incompleteTasks {
+    return _tasks.where((e) => e.taskState == TaskState.incomplete).toList();
   }
 
-  Map<String, Task> get completeTasks {
-    Map<String, Task> tmpTasks = {};
-    _tasks.forEach((key, value) {
-      if (value.taskState == TaskState.completed) {
-        tmpTasks[key] = value;
-      }
-    });
-    return tmpTasks;
+  List<Task> get completeTasks {
+    return _tasks.where((e) => e.taskState == TaskState.completed).toList();
   }
 
-  void addTask(Task newTask) {
-    String taskKey = UniqueKey().toString();
-    _tasks[taskKey] = newTask;
-    if (newTask.reminders != null && newTask.date != null) {
-      if (newTask.reminders!.isNotEmpty) {
-        for (Reminder reminder in newTask.reminders!) {
-          AwesomeNotifications().createNotification(
-            schedule: NotificationCalendar.fromDate(
-                date: reminder.getNextDate(newTask.date!)),
-            content: NotificationContent(
-                id: 10,
-                channelKey: 'open_reminders',
-                title: newTask.name,
-                body: newTask.description,
-                actionType: ActionType.Default),
-            actionButtons: [
-              NotificationActionButton(key: 'complete', label: 'Complete'),
-              NotificationActionButton(key: 'snooze', label: 'Snooze'),
-            ],
-          );
-        }
+  int newRandomId() {
+    if (_tasks.length > 9999) {
+      return 0;
+    }
+    while (true) {
+      int taskId = math.Random().nextInt(9999);
+      Task? exists = _tasks.firstWhereOrNull((e) => e.id == taskId);
+      if (exists == null) {
+        return taskId;
       }
     }
+  }
+
+  int? getTaskIndexById(int taskId) {
+    int index = _tasks.indexWhere((e) => e.id == taskId);
+    if (index == -1) return null;
+    return index;
+  }
+
+  Task? getTaskById(int taskId) {
+    return _tasks.firstWhereOrNull((e) => e.id == taskId);
+  }
+
+  void addTask(Task newTask, {bool writeJson = true}) {
+    if (newTask.id == -1) {
+      int newId = newRandomId();
+      newTask.id = newId;
+    }
+
+    _tasks.add(newTask);
+    newTask.createNotification();
     notifyListeners();
+    if (writeJson) writeData();
+  }
+
+  void completeTask(int taskId) {
+    int? index = getTaskIndexById(taskId);
+    if (index != null) {
+      DateTime? nextRepeat = _tasks[index].getNextRepeat();
+
+      Task nextTask = Task.from(_tasks[index]);
+      _tasks[index].completedOn = DateTime.now();
+      _tasks[index].taskState = TaskState.completed;
+
+      if (nextRepeat != null) {
+        nextTask.date = nextRepeat;
+        nextTask.id = -1;
+        addTask(nextTask, writeJson: false);
+      }
+    } else {
+      deleteTask(taskId, writeJson: false);
+    }
+    writeData();
+  }
+
+  void deleteTask(int taskId,
+      {bool writeJson = true, bool deleteCompleted = false}) {
+    Task? taskData = getTaskById(taskId);
+    if (taskData != null) {
+      taskData.cancelNotification();
+    }
+    if (deleteCompleted) {
+      _tasks.removeWhere(
+          (e) => e.id == taskId && e.taskState == TaskState.completed);
+    } else {
+      _tasks.removeWhere(
+          (e) => e.id == taskId && e.taskState == TaskState.incomplete);
+    }
+
+    notifyListeners();
+    if (writeJson) writeData();
   }
 
   Future<void> writeData() async {
-    final jsonData = jsonEncode(
-        _tasks.map<String, Map>((key, value) => MapEntry(key, value.toMap())));
+    List<Map> testMap = _tasks.map((e) => e.toJson()).toList();
+    final jsonData = jsonEncode(testMap);
     final file = File(filePath);
     await file.writeAsString(jsonData);
   }
@@ -76,14 +112,14 @@ class TaskModel extends ChangeNotifier {
     filePath = '$folderPath/reminders.json';
     if (!File(filePath).existsSync()) {
       File(filePath).createSync(recursive: true);
-      _tasks = {};
+      _tasks = [];
     } else {
       String input = File(filePath).readAsStringSync();
       if (input == "") {
-        _tasks = {};
+        _tasks = [];
       } else {
-        Map map = jsonDecode(input);
-        _tasks = map.map((key, value) => MapEntry(key, Task.fromMap(value)));
+        List<dynamic> map = jsonDecode(input);
+        _tasks = map.map((e) => Task.fromMap(e)).toList();
       }
     }
     notifyListeners();

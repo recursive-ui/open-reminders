@@ -22,7 +22,7 @@ class ReminderList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TaskModel>(
       builder: (context, taskModel, child) {
-        List<Task> tasks = taskModel.incompleteTasks.values.toList();
+        List<Task> tasks = taskModel.incompleteTasks;
 
         return Scaffold(
           floatingActionButton: FloatingActionButton(

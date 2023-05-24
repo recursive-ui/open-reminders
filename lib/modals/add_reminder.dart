@@ -15,7 +15,10 @@ import 'package:provider/provider.dart';
 import 'package:textfield_tags/textfield_tags.dart';
 
 class AddReminder extends StatefulWidget {
-  const AddReminder({super.key});
+  const AddReminder({super.key, this.task, this.isEditing = false});
+
+  final bool isEditing;
+  final Task? task;
 
   @override
   State<AddReminder> createState() => _AddReminderState();
@@ -94,7 +97,7 @@ class _AddReminderState extends State<AddReminder> {
     DialogStatus<Repeat?>? newRepeat = await showDialog<DialogStatus<Repeat?>>(
       context: context,
       builder: (BuildContext context) {
-        return const RepeatPickerModal();
+        return RepeatPickerModal(repeat: repeat);
       },
     );
 
@@ -156,8 +159,42 @@ class _AddReminderState extends State<AddReminder> {
         tags: tags,
         category: category == '' ? null : category,
       );
-      Provider.of<TaskModel>(context, listen: false).addTask(newTask);
+      TaskModel model = Provider.of<TaskModel>(context, listen: false);
+      model.addTask(newTask);
+
+      if (widget.isEditing && widget.task != null) {
+        model.deleteTask(widget.task!.id);
+      }
+
       Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.task != null) {
+      name = widget.task!.name;
+      description = widget.task!.description;
+      priority = widget.task!.priority;
+
+      tags = widget.task!.tags;
+      if (tags != null) {
+        if (tags!.isNotEmpty) {
+          for (String tag in tags!) {
+            _controller.addTag = tag;
+          }
+        }
+      }
+
+      category = widget.task!.category;
+      date = widget.task!.date;
+      time = widget.task!.date == null
+          ? null
+          : TimeOfDay.fromDateTime(widget.task!.date!);
+      duration = widget.task!.duration;
+      reminders = widget.task!.reminders;
+      repeat = widget.task!.repeat;
     }
   }
 
@@ -183,6 +220,7 @@ class _AddReminderState extends State<AddReminder> {
                 children: [
                   Expanded(
                     child: TextFormField(
+                      initialValue: name,
                       decoration: const InputDecoration(
                         labelText: 'What do you want to do?',
                       ),
@@ -206,6 +244,7 @@ class _AddReminderState extends State<AddReminder> {
               ),
               const SizedBox(height: 8.0),
               TextFormField(
+                initialValue: description,
                 decoration: const InputDecoration(
                   labelText: 'Description',
                 ),
@@ -214,6 +253,7 @@ class _AddReminderState extends State<AddReminder> {
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
                   ? TextFormField(
+                      initialValue: category,
                       decoration: const InputDecoration(
                         labelText: 'Category',
                       ),
@@ -228,6 +268,7 @@ class _AddReminderState extends State<AddReminder> {
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
                   ? TextFormField(
+                      initialValue: priority?.toString(),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
@@ -288,7 +329,8 @@ class _AddReminderState extends State<AddReminder> {
                   ),
                   AddReminderIconButton(
                     onPressed: addReminderTask,
-                    iconData: Icons.send_outlined,
+                    iconData:
+                        widget.isEditing ? Icons.save : Icons.send_outlined,
                     colour: ThemeColors.kSecondary,
                   ),
                 ],

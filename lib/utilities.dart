@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_reminders/models/reminder.dart';
 
 String? prettyDate(DateTime? dateTime) {
   if (dateTime == null) {
@@ -77,6 +78,10 @@ String? validatorRangeField(String? input) {
     final validCharacters = RegExp(r'^[0-9]+-[0-9]+$');
     if (!validCharacters.hasMatch(input.replaceAll(' ', ''))) {
       return "Needs to be two numbers\n seperated by a dash\n e.g. 1-5";
+    }
+    List<int> range = input.split('-').map((e) => int.parse(e)).toList();
+    if (range[0] > range[1]) {
+      return 'Second number needs to be greater than the first.';
     }
   }
   return null;
@@ -165,4 +170,44 @@ TimeOfDay? tryParseTimeOfDay(String input) {
   } catch (_) {
     return null;
   }
+}
+
+bool areListsEqual(var list1, var list2) {
+  if (!(list1 is List && list2 is List) || list1.length != list2.length) {
+    return false;
+  }
+
+  for (int i = 0; i < list1.length; i++) {
+    if (list1[i] != list2[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool areRemindersEqual(List<Reminder>? one, List<Reminder>? two) {
+  if (one == null && two == null) {
+    return true;
+  }
+  if (one == null || two == null) {
+    return false;
+  }
+
+  int i = -1;
+  return one.every((element) {
+    i++;
+    return two[i].isEqual(element);
+  });
+}
+
+bool areRepeatsEqual(Repeat? one, Repeat? two) {
+  if (one == null && two == null) {
+    return true;
+  }
+  if (one == null || two == null) {
+    return false;
+  }
+
+  return one.isEqual(two);
 }

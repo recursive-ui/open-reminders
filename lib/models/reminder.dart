@@ -1,3 +1,4 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:open_reminders/utilities.dart';
 
@@ -5,6 +6,7 @@ enum TaskState { incomplete, completed }
 
 class Task {
   late String name;
+  late int id;
   String? description;
   DateTime? date;
   Duration? duration;
@@ -13,11 +15,12 @@ class Task {
   int? priority;
   List<String>? tags;
   String? category;
-  TaskState taskState = TaskState.incomplete;
+  late TaskState taskState;
   DateTime? completedOn;
 
   Task(
     this.name, {
+    this.id = -1,
     this.description,
     this.date,
     this.duration,
@@ -26,29 +29,134 @@ class Task {
     this.priority,
     this.tags,
     this.category,
+    this.taskState = TaskState.incomplete,
+    this.completedOn,
   });
 
-  Task.fromMap(Map<String, dynamic> json) {
+  void createNotification() {
+    if (reminders != null && date != null) {
+      if (reminders!.isNotEmpty) {
+        DateTime? nextReminder = getNextReminder();
+        if (nextReminder != null) {
+          AwesomeNotifications().createNotification(
+            schedule: NotificationCalendar.fromDate(date: nextReminder),
+            content: NotificationContent(
+                id: id,
+                channelKey: 'open_reminders',
+                groupKey: 'open_reminders_group',
+                title: name,
+                body: description,
+                actionType: ActionType.Default),
+            actionButtons: [
+              NotificationActionButton(key: 'complete', label: 'Complete'),
+              NotificationActionButton(key: 'snooze', label: 'Snooze'),
+            ],
+          );
+        }
+      }
+    }
+  }
+
+  bool get isOverdue {
+    if (date != null) {
+      if (DateTime.now().isAfter(date!)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  DateTime? getNextRepeat() {
+    if (repeat == null) {
+      return null;
+    }
+    if (date != null) {
+      if (date!.isAfter(DateTime.now())) {
+        return repeat!.getNextDate(dateTime: date);
+      }
+    }
+    return repeat!.getNextDate();
+  }
+
+  DateTime? getNextReminder() {
+    if (reminders == null || date == null) {
+      return null;
+    }
+    if (reminders!.isEmpty) {
+      return null;
+    }
+
+    List<DateTime> nextDates =
+        reminders!.map((e) => e.getNextDate(date!)).toList();
+    return nextDates.reduce((min, e) => e.isBefore(min) ? e : min);
+  }
+
+  void cancelNotification() {
+    AwesomeNotifications().cancel(id);
+  }
+
+  bool isEqual(
+    Task other, {
+    bool ignoreId = true,
+    bool ignoreDate = false,
+    bool ignoreCompleted = false,
+  }) {
+    bool idsEqual = true;
+    if (!ignoreId) {
+      idsEqual = id == other.id;
+    }
+    bool datesEqual = true;
+    if (!ignoreDate) {
+      datesEqual = date == other.date;
+    }
+    bool completedEqual = true;
+    if (!ignoreCompleted) {
+      completedEqual =
+          completedOn == other.completedOn && taskState == other.taskState;
+    }
+    if (idsEqual &&
+        name == other.name &&
+        description == other.description &&
+        datesEqual &&
+        duration == other.duration &&
+        areRemindersEqual(reminders, other.reminders) &&
+        areRepeatsEqual(repeat, other.repeat) &&
+        priority == other.priority &&
+        tags == other.tags &&
+        category == other.category &&
+        completedEqual) {
+      return true;
+    }
+    return false;
+  }
+
+  Task.fromMap(Map json) {
+    id = json['id'] ?? -1;
     name = json['name'];
     description = json['description'];
-    date = DateTime.tryParse(json['date']);
-    duration = Duration(minutes: json['duration']);
-    reminders = json['reminders'];
-    repeat = json['repeat'];
-    priority = json['priority'];
+    date = json['date'] == null ? null : DateTime.tryParse(json['date']);
+    duration =
+        json['duration'] == null ? null : Duration(minutes: json['duration']);
+    reminders = json['reminders'] == null
+        ? null
+        : List.from(json['reminders'].map((e) => Reminder.fromString(e)));
+    repeat = json['repeat'] == null ? null : Repeat.fromMap(json['repeat']);
+    priority = json['priority'] == null ? null : int.tryParse(json['priority']);
     tags = json['tags'];
     category = json['category'];
     taskState = json['taskState'] == 'completed'
         ? TaskState.completed
         : TaskState.incomplete;
-    completedOn = DateTime.tryParse(json['completedOn']);
+    completedOn = json['completedOn'] == null
+        ? null
+        : DateTime.tryParse(json['completedOn']);
   }
-
-  Map<String, dynamic> toMap() => {
+  Map<String, dynamic> toJson() => {
+        'id': id,
         'name': name,
         'description': description,
         'date': date == null ? null : date!.toIso8601String(),
-        'duration': duration ?? duration?.inMinutes,
+        'duration': duration?.inMinutes,
         'reminders': reminders == null
             ? null
             : reminders!.map((r) => r.toString()).toList(),
@@ -61,6 +169,23 @@ class Task {
         'completedOn':
             completedOn == null ? null : completedOn!.toIso8601String(),
       };
+
+  factory Task.from(Task task) {
+    return Task(
+      task.name,
+      id: task.id,
+      description: task.description,
+      date: task.date,
+      duration: task.duration,
+      reminders: task.reminders,
+      repeat: task.repeat,
+      priority: task.priority,
+      tags: task.tags,
+      category: task.category,
+      taskState: task.taskState,
+      completedOn: task.completedOn,
+    );
+  }
 }
 
 class Reminder {
@@ -121,17 +246,40 @@ class Reminder {
     duration = parseTime(splitStrings[0]);
     time = tryParseTimeOfDay(splitStrings[1]);
   }
+
+  bool isEqual(Reminder other) {
+    if (duration == other.duration && time == other.time) return true;
+    return false;
+  }
 }
 
 enum RepeatType { any, value, range, increment }
 
 enum RepeatDuration { minutes, hours, days, weekdays, months }
 
+extension RepeatDurationExtensions on RepeatDuration {
+  String get pluralName {
+    return ['minutes', 'hours', 'days', 'weekdays', 'months'][index];
+  }
+
+  String get longName {
+    return ['minute', 'hour', 'day', 'day', 'month'][index];
+  }
+
+  String get shortName {
+    return ['min', 'hr', 'day', 'wkday', 'mon'][index];
+  }
+}
+
 class RepeatValue {
-  RepeatType type;
+  late RepeatType type;
   List<int>? value;
 
-  RepeatValue(this.type, {this.value});
+  RepeatValue(this.type, {this.value}) {
+    if (value == []) {
+      value == null;
+    }
+  }
 
   int maxRange(RepeatDuration duration) {
     switch (duration) {
@@ -178,6 +326,58 @@ class RepeatValue {
       }
     }
   }
+
+  RepeatValue.fromList(this.value, {RepeatDuration? duration}) {
+    type = RepeatType.value;
+    if (value != null) {
+      if (duration != null) {
+        List<int> everyTest = List.generate(maxRange(duration) + 1, (i) => i);
+        if (areListsEqual(value, everyTest)) {
+          type = RepeatType.any;
+          value = null;
+        }
+      }
+    }
+  }
+
+  String weekdayName(int index) {
+    return ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'][index];
+  }
+
+  String get prettyWeekdayName {
+    if (value == null) {
+      return '';
+    }
+    switch (type) {
+      case RepeatType.any:
+        return 'Sun-Sat';
+      case RepeatType.range:
+        return '${weekdayName(value![1])}-${weekdayName(value![0])}';
+      case RepeatType.increment:
+        return 'every ${weekdayName(value![0])}';
+      default:
+        return value!.map((e) => weekdayName(e)).toList().join(',');
+    }
+  }
+
+  String prettyString(RepeatDuration duration) {
+    String dur = duration.pluralName;
+
+    if (duration == RepeatDuration.weekdays) {
+      return prettyWeekdayName;
+    }
+
+    switch (type) {
+      case RepeatType.any:
+        return 'every ${duration.longName}';
+      case RepeatType.range:
+        return 'between ${value![0]} and ${value![1]} $dur';
+      case RepeatType.increment:
+        return 'every ${value![0]} $dur';
+      default:
+        return 'at ${value!.join(',')} $dur';
+    }
+  }
 }
 
 class Repeat {
@@ -186,6 +386,7 @@ class Repeat {
   List<int>? days;
   List<int>? weekdays;
   List<int>? months;
+  String? name;
 
   Repeat({
     RepeatValue? minutes,
@@ -194,24 +395,37 @@ class Repeat {
     RepeatValue? weekdays,
     RepeatValue? months,
   }) {
+    List<String> outName = [];
+
     if (minutes != null) {
       this.minutes = minutes.toList(RepeatDuration.minutes);
+      outName.add(minutes.prettyString(RepeatDuration.minutes));
     }
+
     if (hours != null) {
       this.hours = hours.toList(RepeatDuration.hours);
+      outName.add(hours.prettyString(RepeatDuration.hours));
     }
+
     if (days != null) {
       this.days = days.toList(RepeatDuration.days);
+      outName.add(days.prettyString(RepeatDuration.days));
     }
+
     if (weekdays != null) {
       this.weekdays = weekdays.toList(RepeatDuration.weekdays);
+      outName.add(weekdays.prettyString(RepeatDuration.weekdays));
     }
+
     if (months != null) {
       this.months = months.toList(RepeatDuration.months);
+      outName.add(months.prettyString(RepeatDuration.months));
     }
+
+    name = outName.join(' ');
   }
 
-  DateTime getNextDate(DateTime? dateTime) {
+  DateTime getNextDate({DateTime? dateTime}) {
     if (dateTime == null || dateTime.isBefore(DateTime.now())) {
       dateTime = DateTime.now();
       dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day,
@@ -255,49 +469,55 @@ class Repeat {
     List<DateTime> outDates = [];
     for (var i = 0; i < n; i++) {
       if (i == 0) {
-        outDates.add(getNextDate(dateTime));
+        outDates.add(getNextDate(dateTime: dateTime));
       } else {
-        outDates.add(getNextDate(outDates[i - 1]));
+        outDates.add(getNextDate(dateTime: outDates[i - 1]));
       }
     }
     return outDates;
   }
 
-  Map<String, List<int>> get toMap {
-    Map<String, List<int>> outMap = {};
-    if (minutes != null) {
-      outMap['minutes'] = minutes!;
-    }
-    if (hours != null) {
-      outMap['hours'] = hours!;
-    }
-    if (days != null) {
-      outMap['days'] = days!;
-    }
-    if (weekdays != null) {
-      outMap['weekdays'] = weekdays!;
-    }
-    if (months != null) {
-      outMap['months'] = months!;
-    }
-    return outMap;
+  Map<String, dynamic> get toMap {
+    return {
+      'minutes': minutes,
+      'hours': hours,
+      'days': days,
+      'weekdays': weekdays,
+      'months': months,
+      'name': name,
+    };
   }
 
   Repeat.fromMap(Map map) {
-    if (map.containsKey('minutes')) {
-      minutes = map[minutes];
+    minutes = map['minutes'];
+    hours = map['hours'];
+    days = map['days'];
+    weekdays = map['weekdays'];
+    months = map['months'];
+    name = map['name'];
+  }
+
+  bool isEqual(Repeat other) {
+    if (minutes == other.minutes &&
+        hours == other.hours &&
+        days == other.days &&
+        weekdays == other.weekdays &&
+        months == other.months) {
+      return true;
     }
-    if (map.containsKey('hours')) {
-      hours = map[hours];
-    }
-    if (map.containsKey('days')) {
-      days = map[days];
-    }
-    if (map.containsKey('weekdays')) {
-      weekdays = map[weekdays];
-    }
-    if (map.containsKey('months')) {
-      months = map[months];
-    }
+
+    return false;
+  }
+
+  Map<String, RepeatValue> get toRepeatValueMap {
+    return {
+      'minutes':
+          RepeatValue.fromList(minutes, duration: RepeatDuration.minutes),
+      'hours': RepeatValue.fromList(hours, duration: RepeatDuration.hours),
+      'days': RepeatValue.fromList(days, duration: RepeatDuration.days),
+      'weekdays':
+          RepeatValue.fromList(weekdays, duration: RepeatDuration.weekdays),
+      'months': RepeatValue.fromList(months, duration: RepeatDuration.months),
+    };
   }
 }

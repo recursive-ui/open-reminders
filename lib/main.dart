@@ -33,8 +33,8 @@ void main() async {
       // Channel groups are only visual and are not required
       channelGroups: [
         NotificationChannelGroup(
-            channelGroupKey: 'basic_channel_group',
-            channelGroupName: 'Basic group')
+            channelGroupKey: 'open_reminders_group',
+            channelGroupName: 'Open Reminders Group')
       ],
       debug: true);
 
