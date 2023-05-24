@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/modals/add_reminder.dart';
+import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/models/task.dart';
+import 'package:open_reminders/widgets/reminder_list_item.dart';
 import 'package:provider/provider.dart';
 
 class ReminderList extends StatelessWidget {
@@ -20,17 +22,23 @@ class ReminderList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TaskModel>(
       builder: (context, taskModel, child) {
+        List<Task> tasks = taskModel.incompleteTasks.values.toList();
+
         return Scaffold(
           floatingActionButton: FloatingActionButton(
             onPressed: () => addNewReminder(context),
             child: const Icon(Icons.add, size: 40.0),
           ),
-          body: Column(
-            children: [
-                  Text(taskModel.filePath),
-                ] +
-                taskModel.tasks.entries.map((e) => Text(e.key)).toList(),
-          ),
+          body: tasks.isEmpty
+              ? const ListTile(
+                  title: Text('Add a task to get started.'),
+                )
+              : ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    return ReminderListItem(task: tasks[index]);
+                  },
+                ),
         );
       },
     );

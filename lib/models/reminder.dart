@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/utilities.dart';
 
+enum TaskState { incomplete, completed }
+
 class Task {
   late String name;
   String? description;
@@ -11,24 +13,42 @@ class Task {
   int? priority;
   List<String>? tags;
   String? category;
+  TaskState taskState = TaskState.incomplete;
+  DateTime? completedOn;
+
+  Task(
+    this.name, {
+    this.description,
+    this.date,
+    this.duration,
+    this.reminders,
+    this.repeat,
+    this.priority,
+    this.tags,
+    this.category,
+  });
 
   Task.fromMap(Map<String, dynamic> json) {
     name = json['name'];
     description = json['description'];
-    date = json['date'];
-    duration = json['duration'];
+    date = DateTime.tryParse(json['date']);
+    duration = Duration(minutes: json['duration']);
     reminders = json['reminders'];
     repeat = json['repeat'];
     priority = json['priority'];
     tags = json['tags'];
     category = json['category'];
+    taskState = json['taskState'] == 'completed'
+        ? TaskState.completed
+        : TaskState.incomplete;
+    completedOn = DateTime.tryParse(json['completedOn']);
   }
 
   Map<String, dynamic> toMap() => {
         'name': name,
         'description': description,
         'date': date == null ? null : date!.toIso8601String(),
-        'duration': duration ?? duration.toString(),
+        'duration': duration ?? duration?.inMinutes,
         'reminders': reminders == null
             ? null
             : reminders!.map((r) => r.toString()).toList(),
@@ -36,11 +56,15 @@ class Task {
         'priority': priority,
         'tags': tags,
         'category': category,
+        'taskState':
+            taskState == TaskState.completed ? 'completed' : 'incomplete',
+        'completedOn':
+            completedOn == null ? null : completedOn!.toIso8601String(),
       };
 }
 
 class Reminder {
-  Duration duration;
+  late Duration duration;
   TimeOfDay? time;
   Reminder({this.duration = const Duration(), this.time});
 
@@ -68,13 +92,16 @@ class Reminder {
     if (duration == const Duration()) {
       durationString = 'that day';
     } else {
-      if (duration.inDays > 1) {
-        durationString = '${duration.inDays} days before';
-      } else if (duration.inHours > 1) {
-        durationString = '${duration.inHours} hours before';
-      } else {
-        durationString = '${duration.inMinutes} mins before';
+      if (duration.inDays > 0) {
+        durationString += ' ${duration.inDays} days';
       }
+      if (duration.inHours.remainder(24) > 0) {
+        durationString += ' ${duration.inHours.remainder(24)} hours';
+      }
+      if (duration.inMinutes.remainder(60) > 0) {
+        durationString += ' ${duration.inMinutes.remainder(60)} minutes';
+      }
+      return durationString.trim();
     }
 
     if (time == null) {
@@ -82,6 +109,17 @@ class Reminder {
     } else {
       return '${prettierTime(time)} $durationString';
     }
+  }
+
+  @override
+  String toString() {
+    return '$duration,$time';
+  }
+
+  Reminder.fromString(String string) {
+    List<String> splitStrings = string.split(',');
+    duration = parseTime(splitStrings[0]);
+    time = tryParseTimeOfDay(splitStrings[1]);
   }
 }
 

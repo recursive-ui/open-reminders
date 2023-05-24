@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/modals/duration_picker_modal.dart';
+import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/utilities.dart';
 import 'package:open_reminders/widgets/duration_picker.dart';
 import 'package:open_reminders/widgets/number_picker.dart';
 
 class CustomReminderInput extends StatefulWidget {
-  const CustomReminderInput({super.key});
+  const CustomReminderInput({super.key, required this.onTap});
+  final Function(Reminder newItem) onTap;
 
   @override
   State<CustomReminderInput> createState() => _CustomReminderInputState();
@@ -47,6 +49,16 @@ class _CustomReminderInputState extends State<CustomReminderInput> {
         duration = newDuration;
       });
     }
+  }
+
+  void clearVariables() {
+    setState(() {
+      time = null;
+      duration = null;
+      daysBefore = 0;
+      hoursBefore = 0;
+      minutesBefore = 0;
+    });
   }
 
   @override
@@ -255,26 +267,76 @@ class _CustomReminderInputState extends State<CustomReminderInput> {
             ),
           ],
         ),
-        const SizedBox(height: 32.0),
-        SizedBox(
-          height: 35,
-          child: Container(
-            decoration: BoxDecoration(
-              color: ThemeColors.kSecondary,
-              borderRadius: BorderRadius.circular(5.0),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: const Center(
-              child: Text(
-                'Add Custom',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.0,
-                  color: ThemeColors.kOnSecondary,
+        const SizedBox(height: 16.0),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 1,
+              child: GestureDetector(
+                onTap: clearVariables,
+                child: SizedBox(
+                  height: 35,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: ThemeColors.kError,
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: const Center(
+                      child: Text(
+                        'Clear',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          color: ThemeColors.kOnError,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 4.0),
+            Expanded(
+              flex: 3,
+              child: GestureDetector(
+                onTap: () {
+                  duration = Duration(
+                      days: daysBefore,
+                      hours: hoursBefore,
+                      minutes: minutesBefore);
+                  if (time != null || duration != null) {
+                    Reminder newReminder = Reminder(
+                        time: time, duration: duration ?? const Duration());
+                    widget.onTap(newReminder);
+                  }
+                  clearVariables();
+                },
+                child: SizedBox(
+                  height: 35,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: ThemeColors.kSecondary,
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: const Center(
+                      child: Text(
+                        'Add Custom',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          color: ThemeColors.kOnSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

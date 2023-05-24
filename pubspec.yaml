@@ -43,6 +43,9 @@ dependencies:
   provider: ^6.0.5
   syncfusion_flutter_calendar: ^21.2.4
   calendar_date_picker2: ^0.5.2
+  textfield_tags: ^2.0.2
+  awesome_notifications: ^0.7.4+1
+  path_provider: ^2.0.15
 
 dev_dependencies:
   flutter_test:

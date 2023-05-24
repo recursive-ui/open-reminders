@@ -91,3 +91,78 @@ String? validatorListValuesField(String? input) {
   }
   return null;
 }
+
+Duration parseTime(String input) {
+  final parts = input.split(':');
+
+  if (parts.length != 3) throw const FormatException('Invalid time format');
+
+  int days;
+  int hours;
+  int minutes;
+  int seconds;
+  int milliseconds;
+  int microseconds;
+
+  {
+    final p = parts[2].split('.');
+
+    if (p.length != 2) throw const FormatException('Invalid time format');
+
+    final p2 = int.parse(p[1].padRight(6, '0'));
+    microseconds = p2 % 1000;
+    milliseconds = p2 ~/ 1000;
+
+    seconds = int.parse(p[0]);
+  }
+
+  minutes = int.parse(parts[1]);
+
+  {
+    int p = int.parse(parts[0]);
+    hours = p % 24;
+    days = p ~/ 24;
+  }
+
+  return Duration(
+      days: days,
+      hours: hours,
+      minutes: minutes,
+      seconds: seconds,
+      milliseconds: milliseconds,
+      microseconds: microseconds);
+}
+
+Duration? tryParseTime(String input) {
+  try {
+    return parseTime(input);
+  } catch (_) {
+    return null;
+  }
+}
+
+TimeOfDay parseTimeOfDay(String input) {
+  final parts = input.split(':');
+
+  if (parts.length != 2) throw const FormatException('Invalid time format');
+
+  int hours;
+  int minutes;
+
+  minutes = int.parse(parts[1]);
+
+  {
+    int p = int.parse(parts[0]);
+    hours = p % 24;
+  }
+
+  return TimeOfDay(hour: hours, minute: minutes);
+}
+
+TimeOfDay? tryParseTimeOfDay(String input) {
+  try {
+    return parseTimeOfDay(input);
+  } catch (_) {
+    return null;
+  }
+}

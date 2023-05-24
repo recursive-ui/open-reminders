@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
+import 'package:open_reminders/models/dialog_status.dart';
 import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/widgets/custom_reminder.dart';
 
@@ -11,7 +12,6 @@ class ReminderPickerModal extends StatefulWidget {
 }
 
 class _ReminderPickerModalState extends State<ReminderPickerModal> {
-  final _formKey = GlobalKey<FormState>();
   final List<Reminder> _items = [
     Reminder(),
     Reminder(duration: const Duration(minutes: 10)),
@@ -19,7 +19,6 @@ class _ReminderPickerModalState extends State<ReminderPickerModal> {
     Reminder(duration: const Duration(days: 1)),
   ];
   final Map<String, bool> _checkedItems = {};
-  // TextEditingController minuteController = TextEditingController();
 
   @override
   void initState() {
@@ -27,6 +26,15 @@ class _ReminderPickerModalState extends State<ReminderPickerModal> {
     for (Reminder item in _items) {
       _checkedItems[item.prettyName] = false;
     }
+  }
+
+  void _addItem(Reminder newItem) {
+    setState(() {
+      if (!_checkedItems.containsKey(newItem.prettyName)) {
+        _items.add(newItem);
+        _checkedItems[newItem.prettyName] = true;
+      }
+    });
   }
 
   void _onCheckboxChanged(String item, bool? isChecked) {
@@ -54,34 +62,44 @@ class _ReminderPickerModalState extends State<ReminderPickerModal> {
     return AlertDialog(
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: checkboxes,
-                  ),
+        height: MediaQuery.of(context).size.height * 0.8,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: checkboxes,
                 ),
               ),
-              const SingleChildScrollView(child: CustomReminderInput()),
-            ],
-          ),
+            ),
+            CustomReminderInput(
+              onTap: _addItem,
+            ),
+          ],
         ),
       ),
       actions: <Widget>[
         TextButton(
           child: const Text(
-            'Cancel',
+            'Clear',
             style: TextStyle(color: ThemeColors.kError),
           ),
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(DialogStatus(true, null));
+          },
+        ),
+        TextButton(
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: ThemeColors.kPrimary),
+          ),
+          onPressed: () {
+            Navigator.of(context).pop(DialogStatus(false, null));
           },
         ),
         TextButton(
@@ -90,9 +108,13 @@ class _ReminderPickerModalState extends State<ReminderPickerModal> {
             style: TextStyle(color: ThemeColors.kSecondary),
           ),
           onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              Navigator.of(context).pop();
+            List<Reminder> outItems = [];
+            for (Reminder item in _items) {
+              if (_checkedItems[item.prettyName] == true) {
+                outItems.add(item);
+              }
             }
+            Navigator.of(context).pop(DialogStatus(true, outItems));
           },
         ),
       ],

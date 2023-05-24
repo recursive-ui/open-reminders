@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
+import 'package:open_reminders/models/dialog_status.dart';
 import 'package:open_reminders/widgets/duration_picker.dart';
 
 class DurationPickerModal extends StatefulWidget {
@@ -104,11 +105,20 @@ class _DurationPickerModalState extends State<DurationPickerModal> {
       actions: <Widget>[
         TextButton(
           child: const Text(
-            'Cancel',
+            'Clear',
             style: TextStyle(color: ThemeColors.kError),
           ),
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(DialogStatus(true, null));
+          },
+        ),
+        TextButton(
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: ThemeColors.kPrimary),
+          ),
+          onPressed: () {
+            Navigator.of(context).pop(DialogStatus(false, null));
           },
         ),
         TextButton(
@@ -117,7 +127,7 @@ class _DurationPickerModalState extends State<DurationPickerModal> {
             style: TextStyle(color: ThemeColors.kSecondary),
           ),
           onPressed: () {
-            Navigator.of(context).pop(_duration);
+            Navigator.of(context).pop(DialogStatus(true, _duration));
           },
         ),
       ],

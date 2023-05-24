@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_reminders/constants.dart';
+import 'package:open_reminders/models/dialog_status.dart';
 import 'package:open_reminders/models/reminder.dart';
 import 'package:open_reminders/widgets/repeat_picker_row.dart';
 
@@ -168,6 +169,15 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
       actions: <Widget>[
         TextButton(
           child: const Text(
+            'Clear',
+            style: TextStyle(color: ThemeColors.kError),
+          ),
+          onPressed: () {
+            Navigator.of(context).pop(DialogStatus(true, null));
+          },
+        ),
+        TextButton(
+          child: const Text(
             'Test',
             style: TextStyle(color: ThemeColors.kPrimary),
           ),
@@ -186,10 +196,10 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
         TextButton(
           child: const Text(
             'Cancel',
-            style: TextStyle(color: ThemeColors.kError),
+            style: TextStyle(color: ThemeColors.kPrimary),
           ),
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(DialogStatus(false, null));
           },
         ),
         TextButton(
@@ -199,7 +209,7 @@ class _RepeatPickerModalState extends State<RepeatPickerModal> {
           ),
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              Navigator.of(context).pop(createRepeat());
+              Navigator.of(context).pop(DialogStatus(true, createRepeat()));
             }
           },
         ),

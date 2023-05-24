@@ -5,9 +5,14 @@ import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/modals/duration_picker_modal.dart';
 import 'package:open_reminders/modals/reminder_picker_modal.dart';
 import 'package:open_reminders/modals/repeat_picker_modal.dart';
+import 'package:open_reminders/models/dialog_status.dart';
 import 'package:open_reminders/models/reminder.dart';
+import 'package:open_reminders/models/task.dart';
 import 'package:open_reminders/utilities.dart';
 import 'package:open_reminders/widgets/add_reminder_button.dart';
+import 'package:open_reminders/widgets/text_field_tags.dart';
+import 'package:provider/provider.dart';
+import 'package:textfield_tags/textfield_tags.dart';
 
 class AddReminder extends StatefulWidget {
   const AddReminder({super.key});
@@ -19,11 +24,18 @@ class AddReminder extends StatefulWidget {
 class _AddReminderState extends State<AddReminder> {
   final _formKey = GlobalKey<FormState>();
   bool expandForm = false;
+  String? name;
+  String? description;
+  int? priority;
+  List<String>? tags;
+  String? category;
   DateTime? date;
   TimeOfDay? time;
   Duration? duration;
   List<Reminder>? reminders;
   Repeat? repeat;
+
+  final TextfieldTagsController _controller = TextfieldTagsController();
 
   void showCalendarPicker() async {
     double height = MediaQuery.of(context).size.height * 0.5;
@@ -42,6 +54,10 @@ class _AddReminderState extends State<AddReminder> {
           date = results[0];
         });
       }
+    } else {
+      setState(() {
+        date = null;
+      });
     }
   }
 
@@ -51,15 +67,14 @@ class _AddReminderState extends State<AddReminder> {
       initialTime: TimeOfDay.now(),
     );
 
-    if (selectedTime != null) {
-      setState(() {
-        time = selectedTime;
-      });
-    }
+    setState(() {
+      time = selectedTime;
+    });
   }
 
   void showDurationDialog() async {
-    Duration? newDuration = await showDialog<Duration>(
+    DialogStatus<Duration?>? newDuration =
+        await showDialog<DialogStatus<Duration?>>(
       context: context,
       builder: (BuildContext context) {
         return const DurationPickerModal();
@@ -67,14 +82,16 @@ class _AddReminderState extends State<AddReminder> {
     );
 
     if (newDuration != null) {
-      setState(() {
-        duration = newDuration;
-      });
+      if (newDuration.isValid) {
+        setState(() {
+          duration = newDuration.data;
+        });
+      }
     }
   }
 
   void showRepeatModal() async {
-    Repeat? newRepeat = await showDialog<Repeat>(
+    DialogStatus<Repeat?>? newRepeat = await showDialog<DialogStatus<Repeat?>>(
       context: context,
       builder: (BuildContext context) {
         return const RepeatPickerModal();
@@ -82,14 +99,17 @@ class _AddReminderState extends State<AddReminder> {
     );
 
     if (newRepeat != null) {
-      setState(() {
-        repeat = newRepeat;
-      });
+      if (newRepeat.isValid) {
+        setState(() {
+          repeat = newRepeat.data;
+        });
+      }
     }
   }
 
   void showReminderModal() async {
-    List<Reminder>? newReminders = await showDialog<List<Reminder>>(
+    DialogStatus<List<Reminder>?>? newReminders =
+        await showDialog<DialogStatus<List<Reminder>?>>(
       context: context,
       builder: (BuildContext context) {
         return const ReminderPickerModal();
@@ -97,14 +117,54 @@ class _AddReminderState extends State<AddReminder> {
     );
 
     if (newReminders != null) {
-      setState(() {
-        reminders = newReminders;
-      });
+      if (newReminders.isValid) {
+        setState(() {
+          reminders = newReminders.data;
+        });
+      }
+    }
+  }
+
+  void addReminderTask() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      try {
+        tags = _controller.getTags;
+      } catch (e) {
+        tags = null;
+      }
+
+      time ??= const TimeOfDay(hour: 9, minute: 0);
+      if (date != null) {
+        date = DateTime(
+          date!.year,
+          date!.month,
+          date!.day,
+          time!.hour,
+          time!.minute,
+        );
+      }
+
+      Task newTask = Task(
+        name!,
+        description: description == '' ? null : description,
+        date: date,
+        duration: duration,
+        reminders: reminders,
+        repeat: repeat,
+        priority: priority,
+        tags: tags,
+        category: category == '' ? null : category,
+      );
+      Provider.of<TaskModel>(context, listen: false).addTask(newTask);
+      Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final double distanceToField = MediaQuery.of(context).size.width;
+
     return Form(
       key: _formKey,
       child: Container(
@@ -126,6 +186,7 @@ class _AddReminderState extends State<AddReminder> {
                       decoration: const InputDecoration(
                         labelText: 'What do you want to do?',
                       ),
+                      onSaved: (newValue) => name = newValue,
                       validator: validatorForMissingFields,
                     ),
                   ),
@@ -148,6 +209,7 @@ class _AddReminderState extends State<AddReminder> {
                 decoration: const InputDecoration(
                   labelText: 'Description',
                 ),
+                onSaved: (newValue) => description = newValue,
               ),
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
@@ -155,15 +217,13 @@ class _AddReminderState extends State<AddReminder> {
                       decoration: const InputDecoration(
                         labelText: 'Category',
                       ),
+                      onSaved: (newValue) => category = newValue,
                     )
                   : Container(),
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
-                  ? TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Tags',
-                      ),
-                    )
+                  ? DefaultTextFieldTags(
+                      controller: _controller, distanceToField: distanceToField)
                   : Container(),
               expandForm ? const SizedBox(height: 8.0) : Container(),
               expandForm
@@ -173,6 +233,8 @@ class _AddReminderState extends State<AddReminder> {
                       decoration: const InputDecoration(
                         labelText: 'Priority',
                       ),
+                      onSaved: (newValue) => priority =
+                          newValue == null ? null : int.tryParse(newValue),
                     )
                   : Container(),
               const SizedBox(height: 16.0),
@@ -225,7 +287,7 @@ class _AddReminderState extends State<AddReminder> {
                     ],
                   ),
                   AddReminderIconButton(
-                    onPressed: () {},
+                    onPressed: addReminderTask,
                     iconData: Icons.send_outlined,
                     colour: ThemeColors.kSecondary,
                   ),
