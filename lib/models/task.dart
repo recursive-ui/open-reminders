@@ -69,6 +69,7 @@ class TaskModel extends ChangeNotifier {
       Task nextTask = Task.from(_tasks[index]);
       _tasks[index].completedOn = DateTime.now();
       _tasks[index].taskState = TaskState.completed;
+      _tasks[index].cancelNotification();
 
       if (nextRepeat != null) {
         nextTask.date = nextRepeat;

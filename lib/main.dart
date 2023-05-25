@@ -20,7 +20,7 @@ void main() async {
   }
 
   AwesomeNotifications().initialize(
-      null,
+      'resource://drawable/notification_icon',
       [
         NotificationChannel(
             channelGroupKey: 'open_reminders_group',

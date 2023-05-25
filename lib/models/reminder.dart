@@ -1,5 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/utilities.dart';
 
 enum TaskState { incomplete, completed }
@@ -46,13 +47,18 @@ class Task {
                 id: id,
                 channelKey: 'open_reminders',
                 groupKey: 'open_reminders_group',
+                backgroundColor: ThemeColors.kPrimary,
+                color: ThemeColors.kOnPrimary,
                 title: name,
                 body: description,
+                icon: 'resource://drawable/notification_icon',
+                // largeIcon: 'resource://drawable/notification_icon_full',
                 payload: {'id': id.toString()},
                 actionType: ActionType.Default),
             actionButtons: [
               NotificationActionButton(key: 'complete', label: 'Complete'),
-              NotificationActionButton(key: 'snooze', label: 'Snooze'),
+              NotificationActionButton(
+                  key: 'snooze', label: 'Snooze', color: ThemeColors.kError),
             ],
           );
         }
