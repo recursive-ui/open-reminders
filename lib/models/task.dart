@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:file_picker/file_picker.dart';
 import 'package:open_reminders/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:open_reminders/models/reminder.dart';
@@ -116,35 +117,42 @@ class TaskModel extends ChangeNotifier {
     await file.writeAsString(jsonData);
   }
 
-  Future<void> requestStoragePermission() async {
-    final permissionStatus = await Permission.storage.status;
+  Future<String> readJsonFile() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? folderPath = prefs.getString('data_directory');
+    filePath = '$folderPath/reminders.json';
+
+    PermissionStatus permissionStatus = await Permission.storage.status;
     if (permissionStatus.isDenied) {
       await Permission.storage.request();
-      if (permissionStatus.isDenied) {
-        await openAppSettings();
-      }
     } else if (permissionStatus.isPermanentlyDenied) {
       await openAppSettings();
     }
-  }
-
-  Future<void> _initModel() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? folderPath = prefs.getString('data_directory');
-    filePath = '$folderPath/reminders.json';
-    await requestStoragePermission();
 
     if (!File(filePath).existsSync()) {
       File(filePath).createSync(recursive: true);
+    }
+
+    try {
+      return File(filePath).readAsStringSync();
+    } catch (e) {
+      String? selectedDirectory = await FilePicker.platform
+          .getDirectoryPath(initialDirectory: folderPath);
+      if (selectedDirectory != null) {
+        await prefs.setString('data_directory', selectedDirectory);
+      }
+    }
+    return readJsonFile();
+  }
+
+  Future<void> _initModel() async {
+    String input = await readJsonFile();
+
+    if (input == "") {
       _tasks = [];
     } else {
-      String input = File(filePath).readAsStringSync();
-      if (input == "") {
-        _tasks = [];
-      } else {
-        List<dynamic> map = jsonDecode(input);
-        _tasks = map.map((e) => Task.fromMap(e)).toList();
-      }
+      List<dynamic> map = jsonDecode(input);
+      _tasks = map.map((e) => Task.fromMap(e)).toList();
     }
     notifyListeners();
   }

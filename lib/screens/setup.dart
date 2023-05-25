@@ -29,6 +29,12 @@ class _SetupScreenState extends State<SetupScreen> {
         hasValidPath = true;
       });
     }
+
+    checkStorage().then((value) {
+      setState(() {
+        isStorageAllowed = value;
+      });
+    });
   }
 
   Future<bool> allowStorage() async {
@@ -41,17 +47,23 @@ class _SetupScreenState extends State<SetupScreen> {
 
     permissionStatus = await Permission.storage.status;
     if (permissionStatus.isGranted) {
-      try {
-        String filePath = '$folderPath/reminders_temp.json';
-        File(filePath).createSync();
-        File(filePath).deleteSync();
-        return true;
-      } catch (e) {
-        String? selectedDirectory = await FilePicker.platform
-            .getDirectoryPath(initialDirectory: folderPath);
-        if (selectedDirectory != null) {
-          return false;
+      String filePath = '$folderPath/reminders.json';
+      if (File(filePath).existsSync()) {
+        try {
+          File(filePath).readAsStringSync();
+          return true;
+        } catch (e) {
+          String? selectedDirectory = await FilePicker.platform
+              .getDirectoryPath(initialDirectory: folderPath);
+          if (selectedDirectory != null && selectedDirectory != folderPath) {
+            setState(() {
+              folderPath = selectedDirectory;
+            });
+            return true;
+          }
         }
+      } else {
+        return true;
       }
     }
     return false;
@@ -98,8 +110,16 @@ class _SetupScreenState extends State<SetupScreen> {
   void initState() {
     super.initState();
     if (Platform.isAndroid) {
-      folderPath = '/storage/emulated/0/Documents';
-      setState(() => hasValidPath = true);
+      getExternalStorageDirectory().then(
+        (directory) {
+          if (directory != null) {
+            setState(() {
+              folderPath = directory.path;
+              hasValidPath = true;
+            });
+          }
+        },
+      );
     } else {
       getApplicationDocumentsDirectory().then(
         (appDir) {
