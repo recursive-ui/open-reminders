@@ -38,14 +38,15 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<bool> allowStorage() async {
-    PermissionStatus permissionStatus = await Permission.storage.status;
+    PermissionStatus permissionStatus =
+        await Permission.manageExternalStorage.status;
     if (permissionStatus.isDenied) {
-      await Permission.storage.request();
+      await Permission.manageExternalStorage.request();
     } else if (permissionStatus.isPermanentlyDenied) {
       await openAppSettings();
     }
 
-    permissionStatus = await Permission.storage.status;
+    permissionStatus = await Permission.manageExternalStorage.status;
     if (permissionStatus.isGranted) {
       String filePath = '$folderPath/reminders.json';
       if (File(filePath).existsSync()) {
@@ -71,7 +72,7 @@ class _SetupScreenState extends State<SetupScreen> {
 
   Future<bool> checkStorage() async {
     if (folderPath != '' || folderPath != 'Select a folder...') {
-      final permissionStatus = await Permission.storage.status;
+      final permissionStatus = await Permission.manageExternalStorage.status;
       if (!permissionStatus.isGranted) {
         return false;
       }

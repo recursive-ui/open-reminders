@@ -122,9 +122,10 @@ class TaskModel extends ChangeNotifier {
     String? folderPath = prefs.getString('data_directory');
     filePath = '$folderPath/reminders.json';
 
-    PermissionStatus permissionStatus = await Permission.storage.status;
+    PermissionStatus permissionStatus =
+        await Permission.manageExternalStorage.status;
     if (permissionStatus.isDenied) {
-      await Permission.storage.request();
+      await Permission.manageExternalStorage.request();
     } else if (permissionStatus.isPermanentlyDenied) {
       await openAppSettings();
     }
