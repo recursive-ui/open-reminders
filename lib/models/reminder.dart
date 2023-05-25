@@ -33,10 +33,12 @@ class Task {
     this.completedOn,
   });
 
-  void createNotification() {
+  void createNotification({DateTime? notificationTime}) {
     if (reminders != null && date != null) {
       if (reminders!.isNotEmpty) {
-        DateTime? nextReminder = getNextReminder();
+        DateTime? nextReminder = notificationTime;
+        nextReminder ??= getNextReminder();
+
         if (nextReminder != null) {
           AwesomeNotifications().createNotification(
             schedule: NotificationCalendar.fromDate(date: nextReminder),
@@ -46,6 +48,7 @@ class Task {
                 groupKey: 'open_reminders_group',
                 title: name,
                 body: description,
+                payload: {'id': id.toString()},
                 actionType: ActionType.Default),
             actionButtons: [
               NotificationActionButton(key: 'complete', label: 'Complete'),
@@ -160,7 +163,7 @@ class Task {
         'reminders': reminders == null
             ? null
             : reminders!.map((r) => r.toString()).toList(),
-        'repeat': reminders == null ? null : repeat!.toMap,
+        'repeat': repeat == null ? null : repeat!.toMap,
         'priority': priority,
         'tags': tags,
         'category': category,
@@ -433,6 +436,8 @@ class Repeat {
     }
     dateTime = dateTime.add(const Duration(minutes: 1));
 
+    removeEmptyLists();
+
     while (true) {
       if (months?.contains(dateTime?.month) == false) {
         dateTime = DateTime(dateTime!.year, dateTime.month + 1, 1);
@@ -456,6 +461,34 @@ class Repeat {
         continue;
       }
       return dateTime!;
+    }
+  }
+
+  void removeEmptyLists() {
+    if (months != null) {
+      if (months!.isEmpty) {
+        months = null;
+      }
+    }
+    if (weekdays != null) {
+      if (weekdays!.isEmpty) {
+        weekdays = null;
+      }
+    }
+    if (days != null) {
+      if (days!.isEmpty) {
+        days = null;
+      }
+    }
+    if (hours != null) {
+      if (hours!.isEmpty) {
+        hours = null;
+      }
+    }
+    if (minutes != null) {
+      if (minutes!.isEmpty) {
+        minutes = null;
+      }
     }
   }
 

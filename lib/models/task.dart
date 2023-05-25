@@ -99,6 +99,14 @@ class TaskModel extends ChangeNotifier {
     if (writeJson) writeData();
   }
 
+  void snoozeTask(int taskId, {int inMinutes = 30}) {
+    int? index = getTaskIndexById(taskId);
+    if (index != null) {
+      DateTime reminderTime = DateTime.now().add(Duration(minutes: inMinutes));
+      _tasks[index].createNotification(notificationTime: reminderTime);
+    }
+  }
+
   Future<void> writeData() async {
     List<Map> testMap = _tasks.map((e) => e.toJson()).toList();
     final jsonData = jsonEncode(testMap);

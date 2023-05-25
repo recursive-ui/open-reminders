@@ -1,6 +1,10 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
+import 'package:open_reminders/models/task.dart';
+import 'package:open_reminders/screens/completed_list.dart';
 import 'package:open_reminders/screens/reminder_list.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,12 +25,27 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     ReminderList(),
     Text('Index 1: Calendar'),
-    Text('Index 2: Completed'),
+    CompletedReminderList(),
     Text('Index 2: Settings'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final receivedAction =
+        ModalRoute.of(context)!.settings.arguments as ReceivedAction?;
+
+    if (receivedAction != null) {
+      TaskModel model = Provider.of<TaskModel>(context, listen: false);
+      int? taskId = int.tryParse(receivedAction.payload!['id']!);
+      if (taskId != null) {
+        if (receivedAction.buttonKeyPressed == 'complete') {
+          model.completeTask(taskId);
+        } else if (receivedAction.buttonKeyPressed == 'snooze') {
+          model.snoozeTask(taskId);
+        }
+      }
+    }
+
     return SafeArea(
         child: Scaffold(
       body: _widgetOptions.elementAt(_selectedIndex),

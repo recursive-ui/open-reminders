@@ -168,7 +168,10 @@ class _ReminderListItemState extends State<ReminderListItem> {
                     const Icon(Icons.alarm,
                         size: 24, color: ThemeColors.kPrimary),
                     const SizedBox(width: 4.0),
-                    Text(prettyDate(widget.task.date) ?? ''),
+                    Text(widget.task.reminders!
+                        .map((e) => e.prettyName)
+                        .toList()
+                        .join(', ')),
                   ],
                 ),
               ),
