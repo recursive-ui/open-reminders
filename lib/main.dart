@@ -4,21 +4,11 @@ import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/models/notifications.dart';
 import 'package:open_reminders/models/task.dart';
 import 'package:open_reminders/screens/home.dart';
-import 'package:open_reminders/screens/setup.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-
-String initialRoute = '/';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? folderPath = prefs.getString('data_directory');
-  if (folderPath != null) {
-    initialRoute = '/home';
-  }
-
   AwesomeNotifications().initialize(
       'resource://drawable/notification_icon',
       [
@@ -76,10 +66,9 @@ class _MyAppState extends State<MyApp> {
         navigatorKey: MyApp.navigatorKey,
         title: 'Open Reminders',
         theme: _buildTheme(Brightness.dark),
-        initialRoute: initialRoute,
+        initialRoute: '/',
         routes: {
-          '/': ((context) => const SetupScreen()),
-          '/home': ((context) => const HomeScreen()),
+          '/': ((context) => const HomeScreen()),
         },
       ),
     );

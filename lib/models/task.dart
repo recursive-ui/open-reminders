@@ -1,16 +1,14 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
-import 'package:file_picker/file_picker.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:open_reminders/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:open_reminders/models/json_handler.dart';
 import 'package:open_reminders/models/reminder.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskModel extends ChangeNotifier {
   List<Task> _tasks = [];
-  String filePath = '';
+  String folderPath = '';
+  bool isNotificationsAllowed = false;
 
   TaskModel() {
     _initModel();
@@ -57,10 +55,11 @@ class TaskModel extends ChangeNotifier {
       newTask.id = newId;
     }
 
+    checkNotificationsEnabled();
     _tasks.add(newTask);
     newTask.createNotification();
     notifyListeners();
-    if (writeJson) writeData();
+    if (writeJson) JSONHandler.writeData(_tasks, folderPath);
   }
 
   void completeTask(int taskId) {
@@ -81,7 +80,7 @@ class TaskModel extends ChangeNotifier {
     } else {
       deleteTask(taskId, writeJson: false);
     }
-    writeData();
+    JSONHandler.writeData(_tasks, folderPath);
   }
 
   void deleteTask(int taskId,
@@ -99,7 +98,7 @@ class TaskModel extends ChangeNotifier {
     }
 
     notifyListeners();
-    if (writeJson) writeData();
+    if (writeJson) JSONHandler.writeData(_tasks, folderPath);
   }
 
   void snoozeTask(int taskId, {int inMinutes = 30}) {
@@ -110,51 +109,18 @@ class TaskModel extends ChangeNotifier {
     }
   }
 
-  Future<void> writeData() async {
-    List<Map> testMap = _tasks.map((e) => e.toJson()).toList();
-    final jsonData = jsonEncode(testMap);
-    final file = File(filePath);
-    await file.writeAsString(jsonData);
-  }
-
-  Future<String> readJsonFile() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? folderPath = prefs.getString('data_directory');
-    filePath = '$folderPath/reminders.json';
-
-    PermissionStatus permissionStatus =
-        await Permission.manageExternalStorage.status;
-    if (permissionStatus.isDenied) {
-      await Permission.manageExternalStorage.request();
-    } else if (permissionStatus.isPermanentlyDenied) {
-      await openAppSettings();
+  void checkNotificationsEnabled() async {
+    if (!isNotificationsAllowed) {
+      isNotificationsAllowed =
+          await AwesomeNotifications().requestPermissionToSendNotifications();
     }
-
-    if (!File(filePath).existsSync()) {
-      File(filePath).createSync(recursive: true);
-    }
-
-    try {
-      return File(filePath).readAsStringSync();
-    } catch (e) {
-      String? selectedDirectory = await FilePicker.platform
-          .getDirectoryPath(initialDirectory: folderPath);
-      if (selectedDirectory != null) {
-        await prefs.setString('data_directory', selectedDirectory);
-      }
-    }
-    return readJsonFile();
   }
 
   Future<void> _initModel() async {
-    String input = await readJsonFile();
-
-    if (input == "") {
-      _tasks = [];
-    } else {
-      List<dynamic> map = jsonDecode(input);
-      _tasks = map.map((e) => Task.fromMap(e)).toList();
-    }
+    folderPath = await JSONHandler.getDefaultStorageDirectory();
+    _tasks = await JSONHandler.readData(folderPath);
+    isNotificationsAllowed =
+        await AwesomeNotifications().isNotificationAllowed();
     notifyListeners();
   }
 }

@@ -4,6 +4,7 @@ import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/models/task.dart';
 import 'package:open_reminders/screens/completed_list.dart';
 import 'package:open_reminders/screens/reminder_list.dart';
+import 'package:open_reminders/screens/settings.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ReminderList(),
     Text('Index 1: Calendar'),
     CompletedReminderList(),
-    Text('Index 2: Settings'),
+    SettingsScreen(),
   ];
 
   @override
