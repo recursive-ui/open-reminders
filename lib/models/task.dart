@@ -2,13 +2,17 @@ import 'dart:math' as math;
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:open_reminders/extensions.dart';
 import 'package:flutter/material.dart';
-import 'package:open_reminders/models/json_handler.dart';
+import 'package:open_reminders/models/data_handler.dart';
+import 'package:open_reminders/models/local_storage_handler.dart';
 import 'package:open_reminders/models/reminder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskModel extends ChangeNotifier {
+  late DataHandler dataHandler;
   List<Task> _tasks = [];
   String folderPath = '';
   bool isNotificationsAllowed = false;
+  bool usePreciseNotifications = false;
 
   TaskModel() {
     _initModel();
@@ -49,7 +53,7 @@ class TaskModel extends ChangeNotifier {
     return _tasks.firstWhereOrNull((e) => e.id == taskId);
   }
 
-  void addTask(Task newTask, {bool writeJson = true}) {
+  Future<void> addTask(Task newTask) async {
     if (newTask.id == -1) {
       int newId = newRandomId();
       newTask.id = newId;
@@ -57,14 +61,18 @@ class TaskModel extends ChangeNotifier {
 
     checkNotificationsEnabled();
     _tasks.add(newTask);
-    newTask.createNotification();
+    dataHandler.addTask(newTask);
+    newTask.createNotification(preciseAlarm: usePreciseNotifications);
+
     notifyListeners();
-    if (writeJson) JSONHandler.writeData(_tasks, folderPath);
   }
 
-  void completeTask(int taskId) {
+  Future<void> completeTask(int taskId) async {
     int? index = getTaskIndexById(taskId);
     if (index != null) {
+      if (_tasks[index].taskState == TaskState.completed) {
+        return;
+      }
       DateTime? nextRepeat = _tasks[index].getNextRepeat();
 
       Task nextTask = Task.from(_tasks[index]);
@@ -75,16 +83,14 @@ class TaskModel extends ChangeNotifier {
       if (nextRepeat != null) {
         nextTask.date = nextRepeat;
         nextTask.id = -1;
-        addTask(nextTask, writeJson: false);
+        addTask(nextTask);
       }
     } else {
-      deleteTask(taskId, writeJson: false);
+      deleteTask(taskId);
     }
-    JSONHandler.writeData(_tasks, folderPath);
   }
 
-  void deleteTask(int taskId,
-      {bool writeJson = true, bool deleteCompleted = false}) {
+  void deleteTask(int taskId, {bool deleteCompleted = false}) async {
     Task? taskData = getTaskById(taskId);
     if (taskData != null) {
       taskData.cancelNotification();
@@ -96,9 +102,8 @@ class TaskModel extends ChangeNotifier {
       _tasks.removeWhere(
           (e) => e.id == taskId && e.taskState == TaskState.incomplete);
     }
-
+    dataHandler.deleteTask(taskId);
     notifyListeners();
-    if (writeJson) JSONHandler.writeData(_tasks, folderPath);
   }
 
   void snoozeTask(int taskId, {int inMinutes = 30}) {
@@ -116,11 +121,65 @@ class TaskModel extends ChangeNotifier {
     }
   }
 
+  void checkScheduledNotifications() async {
+    List<NotificationModel> notifications =
+        await AwesomeNotifications().listScheduledNotifications();
+    List<int> currentTaskIds = [];
+    for (Task task in incompleteTasks) {
+      if (task.hasValidReminder) {
+        currentTaskIds.add(task.id);
+      }
+    }
+    List<int> currentNotificationIds = [];
+    for (NotificationModel notification in notifications) {
+      if (notification.content != null) {
+        if (notification.content!.payload != null) {
+          int? notificationId =
+              int.tryParse(notification.content!.payload!['id']!);
+          if (notificationId != null) {
+            if (!currentTaskIds.contains(notificationId)) {
+              AwesomeNotifications().cancel(notificationId);
+            } else {
+              currentNotificationIds.add(notificationId);
+            }
+          }
+        }
+      }
+    }
+    List<int> missingNotifications = Set<int>.from(currentTaskIds)
+        .difference(Set<int>.from(currentNotificationIds))
+        .toList();
+    for (int taskId in missingNotifications) {
+      Task? task = getTaskById(taskId);
+      if (task != null) {
+        task.createNotification();
+      }
+    }
+  }
+
+  Future<bool> getPreciseNotifications() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool? usePrecise = prefs.getBool('use_precise_notifications');
+    if (usePrecise != null) {
+      return usePrecise;
+    }
+    return false;
+  }
+
+  Future<void> setPreciseNotifications(bool newUsePrecise) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    usePreciseNotifications = newUsePrecise;
+    await prefs.setBool('use_precise_notifications', newUsePrecise);
+  }
+
   Future<void> _initModel() async {
-    folderPath = await JSONHandler.getDefaultStorageDirectory();
-    _tasks = await JSONHandler.readData(folderPath);
+    dataHandler = LocalStorageHandler();
+    await dataHandler.initialise();
+    _tasks = await dataHandler.readTasks();
     isNotificationsAllowed =
         await AwesomeNotifications().isNotificationAllowed();
+    usePreciseNotifications = await getPreciseNotifications();
+    checkScheduledNotifications();
     notifyListeners();
   }
 }

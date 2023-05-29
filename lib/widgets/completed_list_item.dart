@@ -239,7 +239,8 @@ class _CompletedListItemState extends State<CompletedListItem> {
                                         vertical: 0,
                                       ),
                                       child: Text(
-                                        prettyDate(widget.task.completedOn) ??
+                                        prettyCompletedDate(
+                                                widget.task.completedOn) ??
                                             '',
                                         style: const TextStyle(
                                           fontSize: 12,

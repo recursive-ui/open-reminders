@@ -34,7 +34,8 @@ class Task {
     this.completedOn,
   });
 
-  void createNotification({DateTime? notificationTime}) {
+  void createNotification(
+      {DateTime? notificationTime, bool preciseAlarm = false}) {
     if (reminders != null && date != null) {
       if (reminders!.isNotEmpty) {
         DateTime? nextReminder = notificationTime;
@@ -42,7 +43,10 @@ class Task {
 
         if (nextReminder != null) {
           AwesomeNotifications().createNotification(
-            schedule: NotificationCalendar.fromDate(date: nextReminder),
+            schedule: NotificationCalendar.fromDate(
+              date: nextReminder,
+              preciseAlarm: preciseAlarm,
+            ),
             content: NotificationContent(
                 id: id,
                 channelKey: 'open_reminders',
@@ -88,20 +92,45 @@ class Task {
   }
 
   DateTime? getNextReminder() {
-    if (reminders == null || date == null) {
-      return null;
-    }
-    if (reminders!.isEmpty) {
+    if (!hasReminder || date == null) {
       return null;
     }
 
+    DateTime reminderDate = date!;
+    if (DateTime.now().isAfter(reminderDate)) {
+      DateTime? newDate = getNextRepeat();
+      if (newDate != null) {
+        reminderDate = newDate;
+      }
+    }
+
     List<DateTime> nextDates =
-        reminders!.map((e) => e.getNextDate(date!)).toList();
+        reminders!.map((e) => e.getNextDate(reminderDate)).toList();
     return nextDates.reduce((min, e) => e.isBefore(min) ? e : min);
   }
 
   void cancelNotification() {
     AwesomeNotifications().cancel(id);
+  }
+
+  bool get hasReminder {
+    if (reminders != null) {
+      if (reminders!.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool get hasValidReminder {
+    if (hasReminder) {
+      DateTime? nextReminder = getNextReminder();
+      if (nextReminder != null) {}
+      if (DateTime.now().isBefore(nextReminder!)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool isEqual(
@@ -528,11 +557,11 @@ class Repeat {
   }
 
   Repeat.fromMap(Map map) {
-    minutes = map['minutes'];
-    hours = map['hours'];
-    days = map['days'];
-    weekdays = map['weekdays'];
-    months = map['months'];
+    minutes = map['minutes']?.cast<int>();
+    hours = map['hours']?.cast<int>();
+    days = map['days']?.cast<int>();
+    weekdays = map['weekdays']?.cast<int>();
+    months = map['months']?.cast<int>();
     name = map['name'];
   }
 

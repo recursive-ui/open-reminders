@@ -17,6 +17,25 @@ String? prettyDate(DateTime? dateTime) {
   return DateFormat('MMM d').format(dateTime);
 }
 
+String? prettyCompletedDate(DateTime? dateTime) {
+  if (dateTime == null) {
+    return null;
+  }
+
+  String? time = prettierTime(TimeOfDay.fromDateTime(dateTime));
+  DateTime now = DateTime.now();
+
+  if (dateOnly(dateTime) == dateOnly(now)) {
+    return 'Today $time';
+  }
+
+  int daysDiff = dateOnly(dateTime).difference(dateOnly(now)).inDays;
+  if (daysDiff >= 0 && daysDiff < 8) {
+    return '${DateFormat('E').format(dateTime)} $time';
+  }
+  return '${DateFormat('MMM d').format(dateTime)} $time';
+}
+
 DateTime dateOnly(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }

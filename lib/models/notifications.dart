@@ -28,7 +28,7 @@ class NotificationController {
   static Future<void> onActionReceivedMethod(
       ReceivedAction receivedAction) async {
     MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/home', (route) => (route.settings.name != '/home') || route.isFirst,
+        '/', (route) => (route.settings.name != '/') || route.isFirst,
         arguments: receivedAction);
   }
 }

@@ -25,9 +25,9 @@ class _ReminderListItemState extends State<ReminderListItem> {
     model.deleteTask(widget.task.id);
   }
 
-  void completeTask(bool? value) {
+  void completeTask(bool? value) async {
     TaskModel model = Provider.of<TaskModel>(context, listen: false);
-    model.completeTask(widget.task.id);
+    await model.completeTask(widget.task.id);
   }
 
   void editReminder(BuildContext context) {

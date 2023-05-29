@@ -62,13 +62,34 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<TaskModel>(
       create: (_) => TaskModel(),
-      child: MaterialApp(
+      builder: (context2, _) => MaterialApp(
         navigatorKey: MyApp.navigatorKey,
         title: 'Open Reminders',
         theme: _buildTheme(Brightness.dark),
         initialRoute: '/',
-        routes: {
-          '/': ((context) => const HomeScreen()),
+        onGenerateRoute: (settings) {
+          if (settings.arguments != null) {
+            final receivedAction = settings.arguments as ReceivedAction;
+
+            int? taskId = int.tryParse(receivedAction.payload!['id']!);
+            if (taskId != null) {
+              TaskModel model = Provider.of<TaskModel>(context2, listen: false);
+              print('test');
+              if (receivedAction.buttonKeyPressed == 'complete') {
+                model.completeTask(taskId);
+              } else if (receivedAction.buttonKeyPressed == 'snooze') {
+                model.snoozeTask(taskId);
+              }
+            }
+          }
+
+          switch (settings.name) {
+            case '/':
+              return MaterialPageRoute(
+                  builder: (context) => const HomeScreen());
+            default:
+              return null;
+          }
         },
       ),
     );
