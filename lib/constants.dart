@@ -12,4 +12,11 @@ class ThemeColors {
   static const Color kOnSecondary = Color(0xFF000000);
   static const Color kError = Color(0xFFCF6679);
   static const Color kOnError = Color(0xFF000000);
+  static const List<Color> kCalendarAppointments = [
+    Color(0xFFBEDAE3),
+    Color(0xFFC4E9DA),
+    Color(0xFFFED5CF),
+    Color(0xFFF1B598),
+    Color(0xFFD3C7E6),
+  ];
 }

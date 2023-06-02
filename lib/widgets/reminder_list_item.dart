@@ -19,6 +19,7 @@ class ReminderListItem extends StatefulWidget {
 class _ReminderListItemState extends State<ReminderListItem> {
   bool isExpanded = false;
   List<Widget> expandedFields = [Container()];
+  bool isChecked = false;
 
   void deleteTask() {
     TaskModel model = Provider.of<TaskModel>(context, listen: false);
@@ -26,8 +27,20 @@ class _ReminderListItemState extends State<ReminderListItem> {
   }
 
   void completeTask(bool? value) async {
+    setState(() {
+      isChecked = true;
+    });
     TaskModel model = Provider.of<TaskModel>(context, listen: false);
     await model.completeTask(widget.task.id);
+    Future.delayed(const Duration(milliseconds: 250))
+        .then((value) => setState(() {
+              isChecked = false;
+            }));
+  }
+
+  void skipTask() async {
+    TaskModel model = Provider.of<TaskModel>(context, listen: false);
+    await model.skipTask(widget.task.id);
   }
 
   void editReminder(BuildContext context) {
@@ -209,6 +222,29 @@ class _ReminderListItemState extends State<ReminderListItem> {
                 height: 38,
                 child: Container(
                   decoration: BoxDecoration(
+                    color: ThemeColors.kPrimary,
+                    borderRadius: BorderRadius.circular(5.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: TextButton(
+                    onPressed: skipTask,
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ThemeColors.kOnPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                height: 38,
+                child: Container(
+                  decoration: BoxDecoration(
                     color: ThemeColors.kSecondary,
                     borderRadius: BorderRadius.circular(5.0),
                   ),
@@ -255,8 +291,10 @@ class _ReminderListItemState extends State<ReminderListItem> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Checkbox(
-                          value: false,
+                          value: isChecked,
                           onChanged: completeTask,
+                          activeColor: ThemeColors.kSecondary,
+                          checkColor: ThemeColors.kOnSecondary,
                         ),
                         const SizedBox(width: 8.0),
                         Column(

@@ -15,6 +15,14 @@ class LocalStorageHandler extends DataHandler {
   }
 
   @override
+  Future<void> updateTask(Task taskData) {
+    return db
+        .collection('reminders')
+        .doc(taskData.id.toString())
+        .set(taskData.toJson());
+  }
+
+  @override
   Future<void> deleteTask(int taskId) async {
     return db.collection('reminders').doc(taskId.toString()).delete();
   }

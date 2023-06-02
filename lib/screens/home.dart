@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:open_reminders/constants.dart';
+import 'package:open_reminders/screens/calendar.dart';
 import 'package:open_reminders/screens/completed_list.dart';
 import 'package:open_reminders/screens/reminder_list.dart';
 import 'package:open_reminders/screens/settings.dart';
@@ -22,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     ReminderList(),
-    Text('Index 1: Calendar'),
+    CalendarScreen(),
     CompletedReminderList(),
     SettingsScreen(),
   ];

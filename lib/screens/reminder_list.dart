@@ -23,6 +23,16 @@ class ReminderList extends StatelessWidget {
     return Consumer<TaskModel>(
       builder: (context, taskModel, child) {
         List<Task> tasks = taskModel.incompleteTasks;
+        tasks.sort((a, b) {
+          int compare = a.name.compareTo(b.name);
+          if (a.date != null && b.date != null) {
+            compare = a.date!.compareTo(b.date!);
+            if (compare == 0) {
+              return a.name.compareTo(b.name);
+            }
+          }
+          return compare;
+        });
 
         return Scaffold(
           floatingActionButton: FloatingActionButton(

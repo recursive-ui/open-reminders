@@ -1,7 +1,9 @@
-import 'dart:math' as math;
+import 'dart:math';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:open_reminders/constants.dart';
 import 'package:open_reminders/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:open_reminders/models/calendar_data.dart';
 import 'package:open_reminders/models/data_handler.dart';
 import 'package:open_reminders/models/local_storage_handler.dart';
 import 'package:open_reminders/models/reminder.dart';
@@ -30,12 +32,50 @@ class TaskModel extends ChangeNotifier {
     return _tasks.where((e) => e.taskState == TaskState.completed).toList();
   }
 
+  List<Meeting> meetings({DateTime? startDate, required DateTime endDate}) {
+    startDate ??= DateTime.now();
+    final List<Meeting> meetings = <Meeting>[];
+
+    Duration duration = const Duration(minutes: 10);
+    for (Task task in incompleteTasks) {
+      if (task.date != null) {
+        Color taskColour = ThemeColors.kCalendarAppointments[
+            Random().nextInt(ThemeColors.kCalendarAppointments.length)];
+        if (task.repeat == null) {
+          meetings.add(
+            Meeting(
+              task.name,
+              task.date!,
+              task.date!.add(task.duration ?? duration),
+              taskColour,
+              false,
+            ),
+          );
+        } else {
+          List<DateTime> repeatDates = task.repeat!
+              .getDatesBetween(startDate: startDate, endDate: endDate);
+          for (DateTime repeat in repeatDates) {
+            meetings.add(Meeting(
+              task.name,
+              repeat,
+              repeat.add(task.duration ?? duration),
+              taskColour,
+              false,
+            ));
+          }
+        }
+      }
+    }
+
+    return meetings;
+  }
+
   int newRandomId() {
     if (_tasks.length > 9999) {
       return 0;
     }
     while (true) {
-      int taskId = math.Random().nextInt(9999);
+      int taskId = Random().nextInt(9999);
       Task? exists = _tasks.firstWhereOrNull((e) => e.id == taskId);
       if (exists == null) {
         return taskId;
@@ -79,15 +119,36 @@ class TaskModel extends ChangeNotifier {
       _tasks[index].completedOn = DateTime.now();
       _tasks[index].taskState = TaskState.completed;
       _tasks[index].cancelNotification();
+      dataHandler.updateTask(_tasks[index]);
 
       if (nextRepeat != null) {
         nextTask.date = nextRepeat;
         nextTask.id = -1;
         addTask(nextTask);
+      } else {
+        notifyListeners();
       }
     } else {
       deleteTask(taskId);
     }
+  }
+
+  Future<void> skipTask(int taskId) async {
+    int? index = getTaskIndexById(taskId);
+    if (index != null) {
+      if (_tasks[index].taskState == TaskState.completed) {
+        return;
+      }
+      DateTime? nextRepeat = _tasks[index].getNextRepeat();
+
+      if (nextRepeat != null) {
+        Task nextTask = Task.from(_tasks[index]);
+        nextTask.date = nextRepeat;
+        nextTask.id = -1;
+        addTask(nextTask);
+      }
+    }
+    deleteTask(taskId);
   }
 
   void deleteTask(int taskId, {bool deleteCompleted = false}) async {

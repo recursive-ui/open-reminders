@@ -74,7 +74,6 @@ class _MyAppState extends State<MyApp> {
             int? taskId = int.tryParse(receivedAction.payload!['id']!);
             if (taskId != null) {
               TaskModel model = Provider.of<TaskModel>(context2, listen: false);
-              print('test');
               if (receivedAction.buttonKeyPressed == 'complete') {
                 model.completeTask(taskId);
               } else if (receivedAction.buttonKeyPressed == 'snooze') {

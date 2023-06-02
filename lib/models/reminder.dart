@@ -545,6 +545,28 @@ class Repeat {
     return outDates;
   }
 
+  List<DateTime> getDatesBetween(
+      {DateTime? startDate,
+      required DateTime endDate,
+      int maximumRepeats = 100}) {
+    if (startDate == null) {
+      startDate = DateTime.now();
+      startDate = DateTime(startDate.year, startDate.month, startDate.day,
+          startDate.hour, startDate.minute);
+      startDate = startDate.add(const Duration(minutes: 1));
+    }
+    List<DateTime> outDates = [];
+    outDates.add(getNextDate(dateTime: startDate));
+    int i = 0;
+    while (true) {
+      DateTime nextDate = getNextDate(dateTime: outDates.last);
+      if (nextDate.isAfter(endDate) || i > maximumRepeats) break;
+      outDates.add(nextDate);
+      i++;
+    }
+    return outDates;
+  }
+
   Map<String, dynamic> get toMap {
     return {
       'minutes': minutes,

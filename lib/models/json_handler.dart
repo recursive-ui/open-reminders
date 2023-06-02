@@ -23,6 +23,11 @@ class JSONHandler extends DataHandler {
   }
 
   @override
+  Future<void> updateTask(Task taskData) async {
+    return;
+  }
+
+  @override
   Future<List<Task>> readTasks() async {
     String filePath = '$folderPath/reminders.json';
 
