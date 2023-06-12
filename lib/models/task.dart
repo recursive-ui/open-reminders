@@ -15,10 +15,9 @@ class TaskModel extends ChangeNotifier {
   String folderPath = '';
   bool isNotificationsAllowed = false;
   bool usePreciseNotifications = false;
+  bool isInitialised = false;
 
-  TaskModel() {
-    _initModel();
-  }
+  TaskModel();
 
   List<Task> get tasks {
     return List.unmodifiable(_tasks);
@@ -233,7 +232,7 @@ class TaskModel extends ChangeNotifier {
     await prefs.setBool('use_precise_notifications', newUsePrecise);
   }
 
-  Future<void> _initModel() async {
+  Future<void> initModel() async {
     dataHandler = LocalStorageHandler();
     await dataHandler.initialise();
     _tasks = await dataHandler.readTasks();
@@ -241,6 +240,7 @@ class TaskModel extends ChangeNotifier {
         await AwesomeNotifications().isNotificationAllowed();
     usePreciseNotifications = await getPreciseNotifications();
     checkScheduledNotifications();
+    isInitialised = true;
     notifyListeners();
   }
 }

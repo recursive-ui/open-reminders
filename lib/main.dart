@@ -7,6 +7,19 @@ import 'package:open_reminders/screens/home.dart';
 import 'package:provider/provider.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 
+late TaskModel taskModel;
+
+void processNotification(ReceivedAction receivedAction, TaskModel model) {
+  int? taskId = int.tryParse(receivedAction.payload!['id']!);
+  if (taskId != null) {
+    if (receivedAction.buttonKeyPressed == 'complete') {
+      model.completeTask(taskId);
+    } else if (receivedAction.buttonKeyPressed == 'snooze') {
+      model.snoozeTask(taskId);
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AwesomeNotifications().initialize(
@@ -27,6 +40,15 @@ void main() async {
             channelGroupName: 'Open Reminders Group')
       ],
       debug: true);
+
+  taskModel = TaskModel();
+  await taskModel.initModel();
+
+  ReceivedAction? initialAction = await AwesomeNotifications()
+      .getInitialNotificationAction(removeFromActionEvents: false);
+  if (initialAction != null) {
+    processNotification(initialAction, taskModel);
+  }
 
   runApp(const MyApp());
 }
@@ -60,8 +82,8 @@ class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TaskModel>(
-      create: (_) => TaskModel(),
+    return ChangeNotifierProvider<TaskModel>.value(
+      value: taskModel,
       builder: (context2, _) => MaterialApp(
         navigatorKey: MyApp.navigatorKey,
         title: 'Open Reminders',
@@ -70,16 +92,8 @@ class _MyAppState extends State<MyApp> {
         onGenerateRoute: (settings) {
           if (settings.arguments != null) {
             final receivedAction = settings.arguments as ReceivedAction;
-
-            int? taskId = int.tryParse(receivedAction.payload!['id']!);
-            if (taskId != null) {
-              TaskModel model = Provider.of<TaskModel>(context2, listen: false);
-              if (receivedAction.buttonKeyPressed == 'complete') {
-                model.completeTask(taskId);
-              } else if (receivedAction.buttonKeyPressed == 'snooze') {
-                model.snoozeTask(taskId);
-              }
-            }
+            TaskModel model = Provider.of<TaskModel>(context2, listen: false);
+            processNotification(receivedAction, model);
           }
 
           switch (settings.name) {
